@@ -1,16 +1,15 @@
 const supabase = require("../config/supabase");
+const userRepository = require("../repositories/user.repository");
 
 /**
- * auth.middleware.js — Authentication Middleware
- *
- * Purpose: Protects API endpoints by validating Supabase Auth JWT tokens
- * sent in the Authorization header (`Bearer <token>`).
+ * auth.middleware.js — Authentication & Auto-Sync Middleware
  *
  * Flow:
  * 1. Extract token from `Authorization` header.
  * 2. Validate token using Supabase Auth client (`supabase.auth.getUser(token)`).
  * 3. Attach `req.user` with user ID, email, and user_metadata (role, name).
- * 4. Call `next()` to proceed or return `401 Unauthorized` on failure.
+ * 4. Sync/upsert profile record into `public.profiles` via Prisma.
+ * 5. Call `next()` to proceed.
  */
 
 const authenticate = async (req, res, next) => {
@@ -36,15 +35,32 @@ const authenticate = async (req, res, next) => {
       });
     }
 
+    const role = user.user_metadata?.role || "NGO";
+    const fullName = user.user_metadata?.fullName || user.user_metadata?.full_name || user.email.split("@")[0];
+    const organizationName = user.user_metadata?.organizationName || user.user_metadata?.organization_name || "";
+    const phoneNumber = user.user_metadata?.phoneNumber || user.user_metadata?.phone_number || "";
+
     // Attach user to request object
     req.user = {
       id: user.id,
       email: user.email,
-      role: user.user_metadata?.role || "NGO",
-      fullName: user.user_metadata?.fullName || user.user_metadata?.full_name || user.email.split("@")[0],
-      organizationName: user.user_metadata?.organizationName || user.user_metadata?.organization_name || "",
-      phoneNumber: user.user_metadata?.phoneNumber || user.user_metadata?.phone_number || "",
+      role,
+      fullName,
+      organizationName,
+      phoneNumber,
     };
+
+    // Auto-sync profile to Prisma public.profiles table silently
+    userRepository.createProfile({
+      id: user.id,
+      fullName,
+      email: user.email,
+      role,
+      organizationName,
+      phoneNumber,
+    }).catch(() => {
+      // Ignore duplicate key errors if profile already exists
+    });
 
     next();
   } catch (err) {
