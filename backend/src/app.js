@@ -35,6 +35,10 @@ app.use(express.urlencoded({ extended: true }));
 // ─── Logging ───
 app.use(morgan("dev"));
 
+// ─── Route Imports ───
+const authRoutes = require("./routes/auth.routes");
+const profileRoutes = require("./routes/profile.routes");
+
 // ─── Health Check ───
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -48,6 +52,10 @@ app.get("/api/health", (req, res) => {
     },
   });
 });
+
+// ─── API Routes ───
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
 
 // ─── 404 Handler ───
 app.use((req, res) => {

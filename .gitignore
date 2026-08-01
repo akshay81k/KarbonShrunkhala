@@ -6,6 +6,10 @@
 .env.*
 !.env.example
 
+# Seed scripts with sensitive data
+seed.js
+backend/seed.js
+
 # Python virtual environments
 venv/
 .venv/
@@ -43,7 +47,6 @@ venv/
 smart-contracts/artifacts/
 smart-contracts/cache/
 smart-contracts/typechain-types/
-
 
 # IPFS
 *.car
