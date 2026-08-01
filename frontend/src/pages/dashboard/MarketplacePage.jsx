@@ -1,5 +1,5 @@
 import { Card } from "../../components/Card";
-import { Badge } from "../../components/Badge";
+import { Badge } from "../../components/common/Badge";
 import { ShoppingBag, Award, CheckCircle2 } from "lucide-react";
 
 export function MarketplacePage() {

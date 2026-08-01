@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Badge } from "../components/Badge";
+import { Badge } from "../components/common/Badge";
 import { Card } from "../components/Card";
 import {
   FolderKanban,
@@ -69,7 +69,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-5">
-      
+
       {/* Top Welcome Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
         <div>
@@ -130,10 +130,10 @@ export function Dashboard() {
 
       {/* Middle Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
+
         {/* Left Column (8 cols) */}
         <div className="lg:col-span-8 space-y-5">
-          
+
           {/* Satellite NDVI Analytics Card */}
           <Card className="p-4 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -228,7 +228,7 @@ export function Dashboard() {
 
         {/* Right Column (4 cols) */}
         <div className="lg:col-span-4 space-y-5">
-          
+
           {/* Recent Activities Timeline */}
           <Card className="p-4 space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">

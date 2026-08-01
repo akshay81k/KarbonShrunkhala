@@ -1,33 +1,21 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
-/* ================================================================
-   KarbonShrunkhala Design System — Exact UI Spec Recreation
-   Source: landing.png & ngo dashboard.png
-   ================================================================ */
+:root {
+  --primary: #0f4c81;
+  --secondary: #0e7490;
+  --accent: #22a06b;
 
-@theme {
-  --color-primary: #0F4C81;
-  --color-primary-hover: #165C9B;
-  
-  --color-secondary: #0E7490;
-  
-  --color-emerald-brand: #22A06B;
-  --color-emerald-hover: #1A7A52;
+  --background: #f8fbfc;
+  --card: #ffffff;
+  --border: #e2e8f0;
 
-  --color-[#0B192C]: #0B192C;
-  --color-[#0F172A]: #0F172A;
-  --color-[#F8FBFC]: #F8FBFC;
+  --sidebar: #0f172a;
 
-  --font-logo: "Sora", sans-serif;
-  --font-heading: "Plus Jakarta Sans", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
 }
 
-*,
-*::before,
-*::after {
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -35,39 +23,35 @@
 
 html {
   scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: var(--font-body);
-  color: #0F172A;
-  background-color: #F8FBFC;
-  line-height: 1.5;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+  overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  line-height: 1.25;
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Plus Jakarta Sans", sans-serif;
 }
 
-code, pre, .font-mono {
-  font-family: var(--font-mono);
+.logo-font {
+  font-family: "Sora", sans-serif;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.number-font {
+  font-family: "IBM Plex Sans", sans-serif;
 }
-::-webkit-scrollbar-track {
-  background: #F1F5F9;
+
+.id-font {
+  font-family: "JetBrains Mono", monospace;
 }
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+
+::selection {
+  background: #22a06b;
+  color: white;
 }

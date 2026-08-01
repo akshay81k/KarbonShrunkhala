@@ -1,4 +1,4 @@
-import { Badge } from "../../components/Badge";
+import { Badge } from "../../components/common/Badge";
 import { Card } from "../../components/Card";
 import { PlusCircle, Search, Filter, FolderKanban, MapPin, Calendar, ExternalLink } from "lucide-react";
 
