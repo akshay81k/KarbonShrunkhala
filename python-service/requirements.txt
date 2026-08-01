@@ -1,0 +1,25 @@
+# KarbonShrunkhala — Python Service Dependencies
+# Core
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+python-dotenv==1.1.1
+pydantic==2.11.5
+
+# Geospatial (Phase 6 — Satellite Processing)
+# geopandas==1.0.1
+# rasterio==1.4.4
+# shapely==2.1.1
+# pyproj==3.7.1
+
+# Google Earth Engine (Phase 6)
+# earthengine-api==1.5.10
+
+# Data Analysis (Phase 6)
+# numpy==2.3.0
+# pandas==2.2.3
+
+# Visualization (Phase 6)
+# matplotlib==3.10.3
+
+# HTTP requests
+requests==2.32.4

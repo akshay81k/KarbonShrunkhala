@@ -1,0 +1,18 @@
+// KarbonShrunkhala — Prisma Schema
+// Database: Supabase PostgreSQL
+// Models will be added in Phase 3 — Database Development
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Phase 3 will add: Profile, Project, ProjectDocument, SatelliteReport,
+// Verification, CarbonCredit, Marketplace, Transaction, ESGCertificate,
+// Notification, AuditLog
+
