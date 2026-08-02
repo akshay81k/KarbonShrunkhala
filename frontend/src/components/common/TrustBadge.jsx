@@ -1,6 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 
-export default function Badge() {
+export default function TrustBadge() {
   return (
     <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/90 px-4 py-2 shadow-sm backdrop-blur">
       <ShieldCheck

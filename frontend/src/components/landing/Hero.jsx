@@ -124,10 +124,7 @@ export default function Hero() {
 
                             <div
                                 key={item.label}
-                                className={`stat-item ${index !== stats.length - 1
-                                    ? "border"
-                                    : ""
-                                    }`}
+                                className="stat-item"
                             >
 
                                 <h3>{item.value}</h3>

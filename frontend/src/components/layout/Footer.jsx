@@ -57,11 +57,11 @@ export function Footer() {
 
             <Link to="/">Home <ArrowUpRight size={15} /></Link>
 
-            <Link to="/#how-it-works">How It Works <ArrowUpRight size={15} /></Link>
+            <Link to="/how-it-works">How It Works <ArrowUpRight size={15} /></Link>
 
-            <Link to="/#marketplace">Marketplace <ArrowUpRight size={15} /></Link>
+            <Link to="/marketplace">Marketplace <ArrowUpRight size={15} /></Link>
 
-            <Link to="/#projects">Projects <ArrowUpRight size={15} /></Link>
+            <Link to="/projects">Projects <ArrowUpRight size={15} /></Link>
 
           </div>
 

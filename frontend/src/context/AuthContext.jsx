@@ -4,6 +4,23 @@ import { authService } from "../services/authService";
 
 const AuthContext = createContext(null);
 
+/**
+ * Maps a user role to their home dashboard path.
+ * Used by Login, Register, ProtectedRoute, and Navbar.
+ */
+export function getRoleDashboard(role) {
+  switch ((role || "").toUpperCase()) {
+    case "VERIFIER":
+      return "/verifier/dashboard";
+    case "GOVERNMENT":
+      return "/admin/dashboard";
+    case "CORPORATE":
+      return "/dashboard"; // Corporate buyer uses NGO dashboard for now
+    default:
+      return "/dashboard"; // NGO default
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);

@@ -1,221 +1,261 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Badge } from "../components/common/Badge";
-import { Card } from "../components/Card";
 import {
-  FolderKanban,
-  Maximize2,
-  Award,
-  ShieldCheck,
-  TrendingUp,
-  PlusCircle,
-  FileUp,
-  LineChart as LineChartIcon,
-  FileSpreadsheet,
-  MessageSquare,
-  ExternalLink,
-  Calendar,
-  MapPin,
-  Clock,
-  ArrowUpRight,
+  FolderKanban, Maximize2, Award, ShieldCheck, TrendingUp,
+  PlusCircle, Upload, FileSpreadsheet, Eye, ArrowRight,
+  MapPin, Clock, FileText, ChevronDown, ArrowUpRight,
+  Headphones,
 } from "lucide-react";
 
-export function Dashboard() {
-  const { user } = useAuth();
-  const role = user?.role || "NGO";
-
-  const [projects] = useState([
+/* ── Mock Data ─────────────────────────────────────────── */
+const PROJECTS = {
+  submitted: [
     {
       id: "proj-1",
-      name: "Sundarbans Delta Mangrove Restoration",
-      state: "West Bengal",
-      district: "South 24 Parganas",
-      ecosystem: "Mangrove",
-      area: "120 Ha",
-      status: "In Verification",
-      lastInspection: "2026-07-28",
+      name: "Sundarbans Restoration",
+      type: "Mangrove Restoration",
+      location: "West Bengal, India",
+      area: "1,250 ha",
+      estCredits: "12,450 tCO₂e",
+      status: "submitted",
+      lastUpdated: "2h ago",
+      img: "https://images.unsplash.com/photo-1502481851512-e9e2529bfbf9?w=80&q=80",
     },
     {
       id: "proj-2",
-      name: "Mahanadi Mangrove Ecosystem Revival",
-      state: "Odisha",
-      district: "Kendrapara",
-      ecosystem: "Mangrove",
-      area: "85 Ha",
-      status: "Active",
-      lastInspection: "2026-07-22",
+      name: "Gahirmatha Mangrove",
+      type: "Mangrove Conservation",
+      location: "Odisha, India",
+      area: "850 ha",
+      estCredits: "8,320 tCO₂e",
+      status: "submitted",
+      lastUpdated: "1d ago",
+      img: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=80&q=80",
     },
     {
       id: "proj-3",
-      name: "Pichavaram Coastal Wetland Preservation",
-      state: "Tamil Nadu",
-      district: "Cuddalore",
-      ecosystem: "Salt Marsh",
-      area: "145 Ha",
-      status: "Credits Issued",
-      lastInspection: "2026-07-15",
+      name: "Kadathundi Coastline",
+      type: "Seagrass Restoration",
+      location: "Tamil Nadu, India",
+      area: "600 ha",
+      estCredits: "6,210 tCO₂e",
+      status: "submitted",
+      lastUpdated: "3d ago",
+      img: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=80&q=80",
     },
+  ],
+  pending: [
     {
       id: "proj-4",
-      name: "Gulf of Kutch Seagrass Meadow Project",
-      state: "Gujarat",
-      district: "Jamnagar",
-      ecosystem: "Seagrass",
-      area: "100 Ha",
-      status: "Draft",
-      lastInspection: "2026-07-10",
+      name: "Mahanadi Mangroves",
+      type: "Mangrove Restoration",
+      location: "Odisha, India",
+      area: "720 ha",
+      estCredits: "7,900 tCO₂e",
+      status: "pending",
+      lastUpdated: "5d ago",
+      img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=80&q=80",
     },
-  ]);
+    {
+      id: "proj-5",
+      name: "Pichavaram Wetland",
+      type: "Salt Marsh Conservation",
+      location: "Tamil Nadu, India",
+      area: "490 ha",
+      estCredits: "4,850 tCO₂e",
+      status: "pending",
+      lastUpdated: "1w ago",
+      img: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=80&q=80",
+    },
+    {
+      id: "proj-6",
+      name: "Gulf of Kutch Seagrass",
+      type: "Seagrass Meadow",
+      location: "Gujarat, India",
+      area: "380 ha",
+      estCredits: "3,210 tCO₂e",
+      status: "pending",
+      lastUpdated: "2w ago",
+      img: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?w=80&q=80",
+    },
+  ],
+  rejected: [
+    {
+      id: "proj-7",
+      name: "Chilika Wetland Project",
+      type: "Wetland Restoration",
+      location: "Odisha, India",
+      area: "210 ha",
+      estCredits: "2,100 tCO₂e",
+      status: "rejected",
+      lastUpdated: "3w ago",
+      img: "https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=80&q=80",
+    },
+    {
+      id: "proj-8",
+      name: "Andaman Coral Reef",
+      type: "Coral Reef Protection",
+      location: "Andaman & Nicobar",
+      area: "150 ha",
+      estCredits: "1,540 tCO₂e",
+      status: "rejected",
+      lastUpdated: "1mo ago",
+      img: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=80&q=80",
+    },
+  ],
+};
+
+const REPORTS = [
+  { name: "Sundarbans Restoration Report", date: "12 Jun 2025" },
+  { name: "Gahirmatha Mangrove Report", date: "05 Jun 2025" },
+  { name: "Q2 Impact Summary", date: "31 May 2025" },
+];
+
+/* ── Component ─────────────────────────────────────────── */
+export function Dashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("submitted");
+
+  const currentProjects = PROJECTS[activeTab] || [];
 
   return (
-    <div className="space-y-5">
-
-      {/* Top Welcome Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="font-heading text-xl sm:text-2xl font-extrabold text-slate-900">
-              Welcome back, {user?.fullName || "Dr. AP Sharma (Admin)"}
-            </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
-              {role}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 font-medium">
-            {user?.organizationName || "Ministry of Earth Sciences (MoES)"} — Platform ID: <span className="font-mono text-slate-700 font-bold">{user?.id?.slice(0, 8) || "586db0b7"}</span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button className="px-3.5 py-1.5 bg-[#22A06B] hover:bg-[#1A7A52] text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer">
-            <PlusCircle className="w-4 h-4" />
-            New Project
-          </button>
-        </div>
-      </div>
-
-      {/* Top 5 Metric Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-        <MetricCard
-          title="ACTIVE PROJECTS"
-          value="12"
-          subtext="4 States in India"
-          icon={<FolderKanban className="w-4 h-4 text-emerald-600" />}
+    <div>
+      {/* ── KPI Cards ── */}
+      <div className="db-kpi-grid">
+        <KPICard
+          icon={<FolderKanban size={20} color="#22A06B" />}
+          iconBg="#E9F8F1"
+          label="Total Projects"
+          value="8"
+          sub="Across 3 statuses"
+          trend="+2"
+          trendDir="up"
         />
-        <MetricCard
-          title="TOTAL AREA"
-          value="450 Ha"
-          subtext="Coastal Mangroves & Marshes"
-          icon={<Maximize2 className="w-4 h-4 text-blue-600" />}
+        <KPICard
+          icon={<Maximize2 size={20} color="#0F4C81" />}
+          iconBg="#EFF6FF"
+          label="Total Area"
+          value="1,250 ha"
+          sub="Across 2 locations"
+          trend="stable"
+          trendDir="neutral"
         />
-        <MetricCard
-          title="ESTIMATED CREDITS"
-          value="15,400"
-          subtext="tCO₂e Potential"
-          icon={<Award className="w-4 h-4 text-amber-600" />}
+        <KPICard
+          icon={<Award size={20} color="#7c3aed" />}
+          iconBg="#F3EEFF"
+          label="Estimated Credits"
+          value="12.45K"
+          sub="tCO₂e"
+          trend="↑ 18.7% vs last 6 months"
+          trendDir="up"
         />
-        <MetricCard
-          title="CREDITS VERIFIED"
-          value="11,200"
-          subtext="NCCR Verified & Tokenized"
-          icon={<ShieldCheck className="w-4 h-4 text-teal-600" />}
+        <KPICard
+          icon={<ShieldCheck size={20} color="#0891b2" />}
+          iconBg="#E0F7FF"
+          label="Credits Verified"
+          value="2.46K"
+          sub="tCO₂e · Verified & Issued"
+          trend="↑ 12.4%"
+          trendDir="up"
         />
-        <MetricCard
-          title="TOTAL IMPACT"
-          value="+24.5%"
-          subtext="Mean NDVI Growth Trend"
-          icon={<TrendingUp className="w-4 h-4 text-cyan-600" />}
+        <KPICard
+          icon={<TrendingUp size={20} color="#d97706" />}
+          iconBg="#FFF8E6"
+          label="Impact Accuracy"
+          value="98%"
+          sub="Verification Accuracy"
+          trend="↑ 3.2%"
+          trendDir="up"
         />
       </div>
 
-      {/* Middle Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      {/* ── Body Grid ── */}
+      <div className="db-body-grid">
 
-        {/* Left Column (8 cols) */}
-        <div className="lg:col-span-8 space-y-5">
+        {/* ── Left / Main Column ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-          {/* Satellite NDVI Analytics Card */}
-          <Card className="p-4 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          {/* Projects Section */}
+          <div className="db-card">
+            <div className="db-card-header">
               <div>
-                <h3 className="font-heading text-sm font-bold text-slate-900">
-                  Satellite NDVI Growth Analytics
-                </h3>
-                <p className="text-[11px] text-slate-500">Google Earth Engine Sentinel-2 Spectral Indices</p>
+                <h3>Your Projects</h3>
               </div>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                Live Feed Active
-              </span>
+              <Link to="/dashboard/projects" className="db-new-project-btn" style={{ fontSize: 12 }}>
+                <PlusCircle size={13} /> New Project
+              </Link>
             </div>
 
-            {/* 7 Vertical Green Bars Graph */}
-            <div className="space-y-2">
-              <div className="h-36 flex items-end justify-between gap-3 px-2 bg-slate-50 rounded-xl border border-slate-100 p-4">
-                {[0.32, 0.41, 0.48, 0.59, 0.68, 0.76, 0.84].map((val, idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                    <span className="text-[10px] font-mono font-bold text-slate-600">{val}</span>
-                    <div
-                      className="w-full bg-[#22A06B] rounded-t-sm transition-all hover:brightness-110"
-                      style={{ height: `${val * 100}%` }}
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">Month {idx + 1}</span>
-                  </div>
+            {/* Tabs */}
+            <div style={{ padding: "14px 22px 0" }}>
+              <div className="db-tabs">
+                {[
+                  { key: "submitted", label: "Submitted", count: PROJECTS.submitted.length },
+                  { key: "pending",   label: "Pending",   count: PROJECTS.pending.length },
+                  { key: "rejected",  label: "Rejected",  count: PROJECTS.rejected.length },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    className={`db-tab${activeTab === tab.key ? " active" : ""}`}
+                    onClick={() => setActiveTab(tab.key)}
+                  >
+                    {tab.label}
+                    <span className="db-tab-count">{tab.count}</span>
+                  </button>
                 ))}
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                <span>NDVI Index Range: <strong className="text-slate-700">0.0 (Bare Soil) to 1.0 (Dense Canopy)</strong></span>
-                <span className="text-emerald-700 font-bold">Target Canopy: Achieved</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Projects Portfolio Table */}
-          <Card className="p-0 overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-heading text-sm font-bold text-slate-900">
-                  My Projects Portfolio
-                </h3>
-                <p className="text-[11px] text-slate-500">Active Blue Carbon restoration sites</p>
-              </div>
-              <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-                View All ↗
-              </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+            {/* Table */}
+            <div className="db-table-wrap" style={{ marginTop: 4 }}>
+              <table className="db-table">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100 text-[10px]">
-                    <th className="p-3">PROJECT NAME</th>
-                    <th className="p-3">ECOSYSTEM</th>
-                    <th className="p-3">AREA</th>
-                    <th className="p-3">STATUS</th>
-                    <th className="p-3">LAST INSPECTION</th>
-                    <th className="p-3 text-right">ACTIONS</th>
+                  <tr>
+                    <th>Project Name</th>
+                    <th>Location</th>
+                    <th>Area</th>
+                    <th>Est. Credits</th>
+                    <th>Status</th>
+                    <th>Last Updated</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {projects.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition">
-                      <td className="p-3 font-bold text-slate-900">
-                        <div>{p.name}</div>
-                        <div className="text-[10px] text-slate-400 font-normal flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-slate-400" /> {p.district}, {p.state}
+                <tbody>
+                  {currentProjects.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div className="db-table-thumb">
+                            <img src={p.img} alt={p.name} />
+                          </div>
+                          <div>
+                            <div className="db-project-name">{p.name}</div>
+                            <div className="db-project-sub">{p.type}</div>
+                          </div>
                         </div>
                       </td>
-                      <td className="p-3 font-medium">{p.ecosystem}</td>
-                      <td className="p-3 font-bold">{p.area}</td>
-                      <td className="p-3">
-                        <Badge variant={p.status}>{p.status}</Badge>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <MapPin size={12} color="#94a3b8" />
+                          <span style={{ fontSize: 12, color: "#64748b" }}>{p.location}</span>
+                        </div>
                       </td>
-                      <td className="p-3 text-slate-500 flex items-center gap-1 mt-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        {p.lastInspection}
+                      <td><span style={{ fontWeight: 600 }}>{p.area}</span></td>
+                      <td><span style={{ fontWeight: 600 }}>{p.estCredits}</span></td>
+                      <td><span className={`db-status ${p.status}`}>{p.status}</span></td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#94a3b8", fontSize: 12 }}>
+                          <Clock size={12} /> {p.lastUpdated}
+                        </div>
                       </td>
-                      <td className="p-3 text-right">
-                        <button className="p-1 hover:bg-slate-100 rounded text-slate-600">
-                          <ExternalLink className="w-3.5 h-3.5" />
+                      <td>
+                        <button
+                          className="db-view-btn"
+                          onClick={() => navigate(`/dashboard/projects/${p.id}`)}
+                        >
+                          <Eye size={12} /> View
                         </button>
                       </td>
                     </tr>
@@ -223,88 +263,162 @@ export function Dashboard() {
                 </tbody>
               </table>
             </div>
-          </Card>
+
+            <div className="db-view-all-row">
+              <Link to="/dashboard/projects" className="db-card-link">
+                View all projects <ArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="db-quick-actions">
+            <QuickAction
+              icon={<PlusCircle size={20} color="#22A06B" />}
+              iconBg="#E9F8F1"
+              title="New Project"
+              desc="Register a new blue carbon project"
+              to="/dashboard/projects"
+            />
+            <QuickAction
+              icon={<Upload size={20} color="#0F4C81" />}
+              iconBg="#EFF6FF"
+              title="Upload Document"
+              desc="Submit project documents and evidence"
+              to="/dashboard/documents"
+            />
+            <QuickAction
+              icon={<FileSpreadsheet size={20} color="#7c3aed" />}
+              iconBg="#F3EEFF"
+              title="Generate Report"
+              desc="Create project reports for verification"
+              to="/dashboard/reports"
+            />
+            <QuickAction
+              icon={<Award size={20} color="#d97706" />}
+              iconBg="#FFF8E6"
+              title="View Credits"
+              desc="Track your credits and history"
+              to="/dashboard/credits"
+            />
+          </div>
         </div>
 
-        {/* Right Column (4 cols) */}
-        <div className="lg:col-span-4 space-y-5">
+        {/* ── Right Panel ── */}
+        <div className="db-right-panel">
 
-          {/* Recent Activities Timeline */}
-          <Card className="p-4 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-heading text-sm font-bold text-slate-900">
-                Recent Activities
-              </h3>
-              <Clock className="w-4 h-4 text-slate-400" />
+          {/* Credits Summary */}
+          <div className="db-card">
+            <div className="db-card-header">
+              <div>
+                <h3>Credits Summary</h3>
+              </div>
+              <button className="db-date-filter" style={{ fontSize: 11, padding: "5px 10px" }}>
+                This Year <ChevronDown size={11} />
+              </button>
             </div>
+            <div className="db-card-body">
+              <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, marginBottom: 2 }}>Total Credits</div>
+              <div className="db-credits-total">
+                12.45K <small style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>tCO₂e</small>
+                <span className="db-credits-up" style={{ fontSize: 12, marginLeft: 8 }}>
+                  <TrendingUp size={11} /> 18.7%
+                </span>
+              </div>
+              <div className="db-credits-row">
+                <span className="db-credits-label">Verified Credits</span>
+                <div>
+                  <span className="db-credits-val">2.46K tCO₂e</span>
+                  <span className="db-credits-up"><TrendingUp size={10} /> 12.4%</span>
+                </div>
+              </div>
+              <div className="db-credits-row">
+                <span className="db-credits-label">Issued Credits</span>
+                <div>
+                  <span className="db-credits-val">2.10K tCO₂e</span>
+                  <span className="db-credits-up"><TrendingUp size={10} /> 10.3%</span>
+                </div>
+              </div>
+              <Link to="/dashboard/credits" className="db-card-link" style={{ marginTop: 14, display: "flex" }}>
+                View credit history <ArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
 
-            <div className="space-y-3">
-              <ActivityItem
-                title="Satellite Report Generated"
-                desc="Sentinel-2 GEE report for Sundarbans Delta"
-                time="2 hours ago"
-              />
-              <ActivityItem
-                title="Verifier Inspection Approved"
-                desc="NCCR approved Mahanadi Mangrove site"
-                time="1 day ago"
-              />
-              <ActivityItem
-                title="Document Uploaded"
-                desc="GeoJSON boundary submitted for Pichavaram"
-                time="3 days ago"
-              />
+          {/* Recent Reports */}
+          <div className="db-card">
+            <div className="db-card-header">
+              <h3>Recent Reports</h3>
+              <Link to="/dashboard/reports" className="db-card-link">View all</Link>
             </div>
-          </Card>
+            <div className="db-card-body" style={{ paddingTop: 8 }}>
+              {REPORTS.map((r) => (
+                <div key={r.name} className="db-report-item">
+                  <div className="db-report-icon">
+                    <FileText size={16} color="#ef4444" />
+                  </div>
+                  <div>
+                    <div className="db-report-name">{r.name}</div>
+                    <div className="db-report-date">{r.date}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          {/* Quick Actions Grid Card */}
-          <Card className="bg-[#475569] text-white p-4 space-y-3 border-slate-600">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <ShortcutButton icon={<FileUp className="w-4 h-4 text-emerald-400" />} label="Upload Document" />
-              <ShortcutButton icon={<LineChartIcon className="w-4 h-4 text-cyan-400" />} label="Monitoring Data" />
-              <ShortcutButton icon={<FileSpreadsheet className="w-4 h-4 text-blue-400" />} label="Generate Report" />
-              <ShortcutButton icon={<MessageSquare className="w-4 h-4 text-amber-400" />} label="Connect Verifier" />
+          {/* Help Card */}
+          <div className="db-help-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <h4>Need Help?</h4>
+                <p>Contact our support team for assistance with your projects.</p>
+              </div>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: "white", display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(3,105,161,.15)", flexShrink: 0,
+              }}>
+                <Headphones size={20} color="#0369a1" />
+              </div>
             </div>
-          </Card>
+            <button className="db-help-btn" onClick={() => navigate("/dashboard/help")}>
+              Contact Support
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function MetricCard({ title, value, subtext, icon }) {
+/* ── Sub-components ─────────────────────────────────────── */
+function KPICard({ icon, iconBg, label, value, sub, trend, trendDir }) {
   return (
-    <Card className="p-3.5 flex flex-col justify-between hover:border-slate-300 transition">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
-        <div className="p-1 bg-slate-50 rounded border border-slate-100">{icon}</div>
-      </div>
-      <div>
-        <span className="font-heading text-xl font-extrabold text-slate-900 block leading-tight">{value}</span>
-        <span className="text-[10px] text-slate-400 font-medium block mt-0.5">{subtext}</span>
-      </div>
-    </Card>
-  );
-}
-
-function ActivityItem({ title, desc, time }) {
-  return (
-    <div className="flex items-start gap-2.5 text-xs">
-      <div className="w-2 h-2 rounded-full bg-[#22A06B] mt-1.5 shrink-0" />
-      <div>
-        <h4 className="font-bold text-slate-900 leading-tight">{title}</h4>
-        <p className="text-slate-500 text-[11px] mt-0.5">{desc}</p>
-        <span className="text-[10px] text-slate-400 block mt-0.5">{time}</span>
-      </div>
+    <div className="db-kpi-card">
+      <div className="db-kpi-icon" style={{ background: iconBg }}>{icon}</div>
+      <div className="db-kpi-label">{label}</div>
+      <div className="db-kpi-value">{value}</div>
+      <div className="db-kpi-sub">{sub}</div>
+      {trend && (
+        <div className={`db-kpi-trend ${trendDir}`}>
+          {trendDir === "up" && <ArrowUpRight size={11} />}
+          {trend}
+        </div>
+      )}
     </div>
   );
 }
 
-function ShortcutButton({ icon, label }) {
+function QuickAction({ icon, iconBg, title, desc, to }) {
+  const navigate = useNavigate();
   return (
-    <button className="p-2.5 bg-slate-700/80 hover:bg-slate-700 rounded-lg border border-slate-600 flex flex-col items-center text-center gap-1 transition cursor-pointer">
-      {icon}
-      <span className="text-[11px] font-semibold text-slate-200">{label}</span>
-    </button>
+    <div className="db-quick-card" onClick={() => navigate(to)} style={{ cursor: "pointer" }}>
+      <div className="db-quick-icon" style={{ background: iconBg }}>{icon}</div>
+      <h4>{title}</h4>
+      <p>{desc}</p>
+      <div className="db-quick-arrow">
+        <ArrowRight size={14} />
+      </div>
+    </div>
   );
 }
