@@ -15,7 +15,7 @@ import "../styles/auth.css";
 import Logo from "../assets/images/logo.png";
 
 export function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -23,6 +23,18 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      setLoading(true);
+      await loginWithGoogle();
+    } catch (err) {
+      setError(err.message || "Failed to sign in with Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -207,6 +219,8 @@ export function Login() {
               <button
                 className="google-btn"
                 type="button"
+                onClick={handleGoogleLogin}
+                disabled={loading}
               >
 
                 <svg

@@ -16,7 +16,7 @@ import {
 import "../styles/auth.css";
 
 export function Register() {
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -30,6 +30,18 @@ export function Register() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      setLoading(true);
+      await loginWithGoogle();
+    } catch (err) {
+      setError(err.message || "Failed to sign in with Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -199,6 +211,8 @@ export function Register() {
                 <button
                   type="button"
                   className="google-btn"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
                 >
 
                   <img
