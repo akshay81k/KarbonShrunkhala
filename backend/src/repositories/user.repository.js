@@ -18,8 +18,17 @@ class UserRepository {
   }
 
   async createProfile(data) {
-    return prisma.profile.create({
-      data: {
+    return prisma.profile.upsert({
+      where: { id: data.id },
+      update: {
+        fullName: data.fullName,
+        email: data.email,
+        role: data.role || "NGO",
+        organizationName: data.organizationName,
+        phoneNumber: data.phoneNumber,
+        avatarUrl: data.avatarUrl,
+      },
+      create: {
         id: data.id,
         fullName: data.fullName,
         email: data.email,

@@ -2,23 +2,22 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const path = require("path");
 
 /**
  * app.js — Express Application Configuration
  *
- * Purpose: Configures Express middleware and routes.
- * This file is separate from server.js to allow for testing
- * without starting the HTTP server.
- *
- * Interactions:
- * - Imported by server.js to start the HTTP server.
- * - Routes will be registered here in future phases.
+ * Configures Express middleware, static uploads, and API routes.
  */
 
 const app = express();
 
 // ─── Security Middleware ───
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 
 // ─── CORS ───
 app.use(
@@ -29,8 +28,11 @@ app.use(
 );
 
 // ─── Request Parsing ───
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+
+// ─── Static Uploads Directory ───
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ─── Logging ───
 app.use(morgan("dev"));
@@ -38,6 +40,9 @@ app.use(morgan("dev"));
 // ─── Route Imports ───
 const authRoutes = require("./routes/auth.routes");
 const profileRoutes = require("./routes/profile.routes");
+const projectRoutes = require("./routes/project.routes");
+const satelliteRoutes = require("./routes/satellite.routes");
+const verificationRoutes = require("./routes/verification.routes");
 
 // ─── Health Check ───
 app.get("/api/health", (req, res) => {
@@ -56,6 +61,9 @@ app.get("/api/health", (req, res) => {
 // ─── API Routes ───
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/satellite", satelliteRoutes);
+app.use("/api/verifications", verificationRoutes);
 
 // ─── 404 Handler ───
 app.use((req, res) => {

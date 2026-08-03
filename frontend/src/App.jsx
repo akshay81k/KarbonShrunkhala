@@ -29,6 +29,7 @@ import { ProjectsPage } from "./pages/dashboard/ProjectsPage";
 import { ProjectDetailPage } from "./pages/dashboard/ProjectDetailPage";
 import { CreditsPage } from "./pages/dashboard/CreditsPage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
+import { MonitoringPage } from "./pages/dashboard/MonitoringPage";
 import { DocumentsPage } from "./pages/dashboard/DocumentsPage";
 import { NotificationsPage } from "./pages/dashboard/NotificationsPage";
 import { SettingsPage } from "./pages/dashboard/SettingsPage";
@@ -95,8 +96,9 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:id" element={<ProjectDetailPage />} />
+          <Route path="monitoring" element={<MonitoringPage />} />
           <Route path="credits" element={<CreditsPage />} />
-          <Route path="reports" element={<ReportsPage />} />
+          <Route path="reports" element={<MonitoringPage />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />

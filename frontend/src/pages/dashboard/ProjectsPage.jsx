@@ -1,166 +1,214 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { projectService } from "../../services/projectService";
+import { useAuth } from "../../context/AuthContext";
+import { Badge } from "../../components/Badge";
+import { Card } from "../../components/Card";
+import { CreateProjectModal } from "../../components/CreateProjectModal";
 import {
-  PlusCircle, Search, Filter, Eye, MapPin, Clock, ArrowRight,
+  PlusCircle,
+  Search,
+  Filter,
+  FolderKanban,
+  MapPin,
+  Calendar,
+  ExternalLink,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
-const ALL_PROJECTS = [
-  { id: "proj-1", name: "Sundarbans Restoration", type: "Mangrove Restoration", location: "West Bengal, India", area: "1,250 ha", estCredits: "12,450 tCO₂e", status: "submitted", lastUpdated: "2h ago", img: "https://images.unsplash.com/photo-1502481851512-e9e2529bfbf9?w=80&q=80" },
-  { id: "proj-2", name: "Gahirmatha Mangrove", type: "Mangrove Conservation", location: "Odisha, India", area: "850 ha", estCredits: "8,320 tCO₂e", status: "submitted", lastUpdated: "1d ago", img: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=80&q=80" },
-  { id: "proj-3", name: "Kadathundi Coastline", type: "Seagrass Restoration", location: "Tamil Nadu, India", area: "600 ha", estCredits: "6,210 tCO₂e", status: "submitted", lastUpdated: "3d ago", img: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=80&q=80" },
-  { id: "proj-4", name: "Mahanadi Mangroves", type: "Mangrove Restoration", location: "Odisha, India", area: "720 ha", estCredits: "7,900 tCO₂e", status: "pending", lastUpdated: "5d ago", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=80&q=80" },
-  { id: "proj-5", name: "Pichavaram Wetland", type: "Salt Marsh Conservation", location: "Tamil Nadu, India", area: "490 ha", estCredits: "4,850 tCO₂e", status: "pending", lastUpdated: "1w ago", img: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=80&q=80" },
-  { id: "proj-6", name: "Gulf of Kutch Seagrass", type: "Seagrass Meadow", location: "Gujarat, India", area: "380 ha", estCredits: "3,210 tCO₂e", status: "pending", lastUpdated: "2w ago", img: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?w=80&q=80" },
-  { id: "proj-7", name: "Chilika Wetland Project", type: "Wetland Restoration", location: "Odisha, India", area: "210 ha", estCredits: "2,100 tCO₂e", status: "rejected", lastUpdated: "3w ago", img: "https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=80&q=80" },
-  { id: "proj-8", name: "Andaman Coral Reef", type: "Coral Reef Protection", location: "Andaman & Nicobar", area: "150 ha", estCredits: "1,540 tCO₂e", status: "rejected", lastUpdated: "1mo ago", img: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=80&q=80" },
-];
-
-const TABS = [
-  { key: "all",       label: "All Projects" },
-  { key: "submitted", label: "Submitted" },
-  { key: "pending",   label: "Pending" },
-  { key: "rejected",  label: "Rejected" },
-];
-
 export function ProjectsPage() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("all");
-  const [search, setSearch] = useState("");
+  const { user } = useAuth();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filtered = ALL_PROJECTS.filter((p) => {
-    const matchTab = activeTab === "all" || p.status === activeTab;
-    const matchSearch = !search
-      || p.name.toLowerCase().includes(search.toLowerCase())
-      || p.location.toLowerCase().includes(search.toLowerCase())
-      || p.type.toLowerCase().includes(search.toLowerCase());
-    return matchTab && matchSearch;
+  const fetchProjects = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await projectService.getAllProjects();
+      setProjects(data);
+    } catch (err) {
+      console.error("Fetch Projects Error:", err);
+      setError(err.message || "Failed to load projects.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const handleProjectCreated = (newProject) => {
+    setProjects((prev) => [newProject, ...prev]);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this project?")) return;
+    try {
+      await projectService.deleteProject(id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      alert(err.message || "Failed to delete project.");
+    }
+  };
+
+  const filteredProjects = projects.filter((p) => {
+    const projName = p.name || p.projectName || "";
+    const projState = p.state || "";
+    const projDistrict = p.district || "";
+    const projEcosystem = p.ecosystemType || "";
+
+    const matchesSearch =
+      projName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      projState.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      projDistrict.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      projEcosystem.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter ? p.status === statusFilter : true;
+    return matchesSearch && matchesStatus;
   });
 
   return (
-    <div>
+    <div className="space-y-6">
+      
       {/* Header */}
-      <div className="db-page-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1>My Projects Portfolio</h1>
-          <p>Manage your registered Blue Carbon restoration sites</p>
+          <h1 className="font-heading text-2xl font-extrabold text-slate-900">
+            {user?.role === "NGO" ? "My Projects Portfolio" : "All Registered Projects"}
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Manage registered Blue Carbon restoration sites and spatial boundaries
+          </p>
         </div>
-        <button
-          className="db-new-project-btn"
-          onClick={() => navigate("/dashboard/projects")}
-          style={{ marginTop: 4, flexShrink: 0 }}
-        >
-          <PlusCircle size={14} /> New Project
-        </button>
-      </div>
 
-      {/* Filters bar */}
-      <div className="db-card" style={{ marginBottom: 20 }}>
-        <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div className="db-searchbar" style={{ flex: 1, minWidth: 200 }}>
-            <Search size={14} />
-            <input
-              type="text"
-              placeholder="Search by name, location, ecosystem..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <button className="db-filter-btn">
-            <Filter size={14} /> Filter
+        {user?.role === "NGO" && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-[#22A06B] hover:bg-[#1A7A52] text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer w-fit"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Register New Project
           </button>
-        </div>
-        <div style={{ padding: "0 16px 14px", borderTop: "1px solid #f1f5f9" }}>
-          <div className="db-tabs" style={{ marginTop: 12 }}>
-            {TABS.map((tab) => {
-              const count = tab.key === "all"
-                ? ALL_PROJECTS.length
-                : ALL_PROJECTS.filter((p) => p.status === tab.key).length;
-              return (
-                <button
-                  key={tab.key}
-                  className={`db-tab${activeTab === tab.key ? " active" : ""}`}
-                  onClick={() => setActiveTab(tab.key)}
-                >
-                  {tab.label}
-                  <span className="db-tab-count">{count}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Projects Table */}
-      <div className="db-card">
-        <div className="db-table-wrap">
-          <table className="db-table">
-            <thead>
-              <tr>
-                <th>Project Name</th>
-                <th>Location</th>
-                <th>Area</th>
-                <th>Est. Credits</th>
-                <th>Status</th>
-                <th>Last Updated</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "40px 16px", color: "#94a3b8" }}>
-                    No projects found matching your criteria.
-                  </td>
-                </tr>
-              ) : filtered.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div className="db-table-thumb">
-                        <img src={p.img} alt={p.name} />
-                      </div>
-                      <div>
-                        <div className="db-project-name">{p.name}</div>
-                        <div className="db-project-sub">{p.type}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <MapPin size={12} color="#94a3b8" />
-                      <span style={{ fontSize: 12, color: "#64748b" }}>{p.location}</span>
-                    </div>
-                  </td>
-                  <td><span style={{ fontWeight: 600, fontSize: 13 }}>{p.area}</span></td>
-                  <td><span style={{ fontWeight: 600, fontSize: 13 }}>{p.estCredits}</span></td>
-                  <td><span className={`db-status ${p.status}`}>{p.status}</span></td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#94a3b8", fontSize: 12 }}>
-                      <Clock size={12} /> {p.lastUpdated}
-                    </div>
-                  </td>
-                  <td>
-                    <button
-                      className="db-view-btn"
-                      onClick={() => navigate(`/dashboard/projects/${p.id}`)}
-                    >
-                      <Eye size={12} /> View Project
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filtered.length > 0 && (
-          <div className="db-view-all-row">
-            <span style={{ fontSize: 12, color: "#64748b" }}>
-              Showing {filtered.length} of {ALL_PROJECTS.length} projects
-            </span>
-          </div>
         )}
       </div>
+
+      {/* Search & Filter Bar */}
+      <Card className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4">
+        <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl w-full sm:w-80 text-xs text-slate-400">
+          <Search className="w-4 h-4 shrink-0 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by name, state, ecosystem..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent border-none outline-none text-slate-800"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+          >
+            <option value="">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="UNDER_VERIFICATION">Under Verification</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+      </Card>
+
+      {/* Projects Table */}
+      <Card className="p-0 overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+            <span className="text-xs font-medium">Loading project portfolio...</span>
+          </div>
+        ) : error ? (
+          <div className="p-6 text-center text-rose-600 text-xs font-medium">{error}</div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="p-12 text-center text-slate-400 space-y-2">
+            <FolderKanban className="w-8 h-8 text-slate-300 mx-auto" />
+            <p className="text-xs font-semibold text-slate-600">No projects found</p>
+            <p className="text-[11px] text-slate-400">Click "Register New Project" to submit your first restoration site.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100 text-[10px]">
+                  <th className="p-4">PROJECT NAME</th>
+                  <th className="p-4">ECOSYSTEM</th>
+                  <th className="p-4">AREA (HA)</th>
+                  <th className="p-4">STATUS</th>
+                  <th className="p-4">DATE CREATED</th>
+                  <th className="p-4 text-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                {filteredProjects.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/80 transition">
+                    <td className="p-4 font-bold text-slate-900">
+                      <Link to={`/dashboard/projects/${p.id}`} className="hover:text-emerald-600 transition">
+                        {p.name}
+                      </Link>
+                      <div className="text-[10px] text-slate-400 font-normal flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3 text-slate-400" /> {p.district}, {p.state}
+                      </div>
+                    </td>
+                    <td className="p-4">{p.ecosystemType}</td>
+                    <td className="p-4 font-bold">{p.areaHectares} Ha</td>
+                    <td className="p-4">
+                      <Badge variant={p.status}>{p.status}</Badge>
+                    </td>
+                    <td className="p-4 text-slate-500 flex items-center gap-1.5 mt-2">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      {new Date(p.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="p-4 text-right space-x-2">
+                      <Link
+                        to={`/dashboard/projects/${p.id}`}
+                        className="p-1.5 inline-block hover:bg-slate-100 rounded-lg text-slate-600 hover:text-slate-900 transition"
+                        title="View Details"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                      {p.status === "DRAFT" && user?.role === "NGO" && (
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          className="p-1.5 hover:bg-rose-50 rounded-lg text-rose-600 transition cursor-pointer"
+                          title="Delete Draft"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Modal */}
+      <CreateProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onProjectCreated={handleProjectCreated}
+      />
     </div>
   );
 }

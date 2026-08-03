@@ -10,6 +10,9 @@
 seed.js
 backend/seed.js
 
+
+python-service/service-account.json
+
 # Python virtual environments
 venv/
 .venv/

@@ -4,18 +4,12 @@ KarbonShrunkhala — Python Satellite Processing Service
 Purpose:
   Provides REST API endpoints for satellite image processing
   using Google Earth Engine and Sentinel-2 imagery.
-
-Interactions:
-  - Called exclusively by the Express backend (never by the frontend directly).
-  - Processes GeoJSON boundaries to compute NDVI/EVI vegetation indices.
-  - Returns analysis results to Express, which stores them in the database.
-
-This service runs on port 8000.
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+from app.routes.satellite import router as satellite_router
 
 app = FastAPI(
     title="KarbonShrunkhala Satellite Service",
@@ -23,15 +17,17 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS — Only the Express backend should call this service
+# CORS — Express backend client authorization
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000"],
+    allow_origins=["http://localhost:5000", "http://localhost:5173", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Register Satellite Processing Endpoints
+app.include_router(satellite_router)
 
 @app.get("/health")
 async def health_check():
@@ -45,7 +41,6 @@ async def health_check():
             "timestamp": datetime.utcnow().isoformat(),
         },
     }
-
 
 if __name__ == "__main__":
     import uvicorn
