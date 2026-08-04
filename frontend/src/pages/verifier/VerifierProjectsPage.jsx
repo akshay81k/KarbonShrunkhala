@@ -1,16 +1,23 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { projectService } from "../../services/projectService";
-import { verificationService } from "../../services/verificationService";
-import { Search, Filter, MapPin, Clock, Loader2 } from "lucide-react";
+import { Search, MapPin, Loader2 } from "lucide-react";
 import { Badge } from "../../components/Badge";
 
 export function VerifierProjectsPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlStatus = searchParams.get("status") || "";
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(urlStatus);
+
+  // Sync statusFilter whenever query string parameter changes (e.g. clicking sidebar menu items)
+  useEffect(() => {
+    setStatusFilter(urlStatus);
+  }, [urlStatus]);
 
   useEffect(() => {
     async function loadProjects() {
@@ -74,9 +81,9 @@ export function VerifierProjectsPage() {
           >
             <option value="">All Statuses</option>
             <option value="SUBMITTED">Submitted (Pending Audit)</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="DRAFT">Draft</option>
+            <option value="APPROVED">Accepted Projects</option>
+            <option value="REJECTED">Rejected Projects</option>
+            <option value="DRAFT">Draft Projects</option>
           </select>
         </div>
       </div>
@@ -90,7 +97,7 @@ export function VerifierProjectsPage() {
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="p-12 text-center text-xs text-slate-500 font-medium">
-            No projects found matching the selected filter.
+            No projects found matching status filter '{statusFilter || "All"}'.
           </div>
         ) : (
           <div className="overflow-x-auto">

@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { PublicLayout } from "./layouts/PublicLayout";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { VerifierLayout } from "./layouts/VerifierLayout";
+import { AdminLayout } from "./layouts/AdminLayout";
 
 // Auth guard & Callbacks
 import { ProtectedRoute } from "./routes/ProtectedRoute";
@@ -28,7 +29,6 @@ import { Profile } from "./pages/Profile";
 import { ProjectsPage } from "./pages/dashboard/ProjectsPage";
 import { ProjectDetailPage } from "./pages/dashboard/ProjectDetailPage";
 import { CreditsPage } from "./pages/dashboard/CreditsPage";
-import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { MonitoringPage } from "./pages/dashboard/MonitoringPage";
 import { DocumentsPage } from "./pages/dashboard/DocumentsPage";
 import { NotificationsPage } from "./pages/dashboard/NotificationsPage";
@@ -41,27 +41,16 @@ import { VerifierProjectsPage } from "./pages/verifier/VerifierProjectsPage";
 import { ProjectReviewPage } from "./pages/verifier/ProjectReviewPage";
 import {
   VerifierProfilePage,
-  VerifierReportsPage,
-  VerifierCreditsPage,
-  VerifierDocumentsPage,
-  VerifierSettingsPage,
   VerifierOrganizationsPage,
   VerifierUsersPage,
 } from "./pages/verifier/VerifierPlaceholders";
 
 // Admin Dashboard pages
-import { AdminLayout } from "./layouts/AdminLayout";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminNGOsPage } from "./pages/admin/AdminNGOsPage";
 import { AdminVerifiersPage } from "./pages/admin/AdminVerifiersPage";
 import { AdminProjectsPage } from "./pages/admin/AdminProjectsPage";
-import {
-  AdminCreditsPage,
-  AdminReportsPage,
-  AdminAnalyticsPage,
-  AdminSettingsPage,
-  AdminNotificationsPage
-} from "./pages/admin/AdminPlaceholders";
+import { AdminAnalyticsPage } from "./pages/admin/AdminAnalyticsPage";
 
 export default function App() {
   return (
@@ -71,19 +60,19 @@ export default function App() {
         {/* ══════════ PUBLIC ROUTES ══════════ */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/projects" element={<PublicProjectsPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/resources" element={<ResourcesPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* ══════════ NGO / CORPORATE DASHBOARD ══════════ */}
+        {/* ══════════ NGO DASHBOARD ══════════ */}
         <Route
           path="/dashboard"
           element={
@@ -121,15 +110,15 @@ export default function App() {
           <Route path="projects/:id" element={<ProjectReviewPage />} />
           
           {/* Sub-pages */}
-          <Route path="satellite" element={<Navigate to="reports" replace />} />
+          <Route path="satellite" element={<MonitoringPage />} />
           <Route path="profile" element={<VerifierProfilePage />} />
-          <Route path="reports" element={<VerifierReportsPage />} />
-          <Route path="credits" element={<VerifierCreditsPage />} />
-          <Route path="documents" element={<VerifierDocumentsPage />} />
-          <Route path="settings" element={<VerifierSettingsPage />} />
+          <Route path="reports" element={<MonitoringPage />} />
+          <Route path="credits" element={<CreditsPage />} />
+          <Route path="documents" element={<DocumentsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="organizations" element={<VerifierOrganizationsPage />} />
           <Route path="users" element={<VerifierUsersPage />} />
-          <Route path="notifications" element={<Navigate to="dashboard" replace />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="help" element={<Navigate to="dashboard" replace />} />
 
           <Route path="*" element={<Navigate to="/verifier/dashboard" replace />} />
@@ -148,11 +137,11 @@ export default function App() {
           <Route path="ngos" element={<AdminNGOsPage />} />
           <Route path="verifiers" element={<AdminVerifiersPage />} />
           <Route path="projects" element={<AdminProjectsPage />} />
-          <Route path="credits" element={<AdminCreditsPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
+          <Route path="credits" element={<CreditsPage />} />
+          <Route path="reports" element={<MonitoringPage />} />
           <Route path="analytics" element={<AdminAnalyticsPage />} />
-          <Route path="notifications" element={<AdminNotificationsPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
 

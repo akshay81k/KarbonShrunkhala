@@ -50,17 +50,20 @@ export function ProjectReviewPage() {
       const projData = await projectService.getProjectById(id);
       setProject(projData);
 
-      const [satData, historyData] = await Promise.all([
-        satelliteService.runAnalysis(id).catch(() => null),
-        verificationService.getProjectVerifications(id).catch(() => []),
-      ]);
+      // Unblock page rendering immediately!
+      setLoading(false);
 
-      if (satData?.data) setSatelliteReport(satData.data);
-      if (historyData) setVerificationHistory(historyData);
+      // Async background fetch for satellite telemetry and verification history
+      verificationService.getProjectVerifications(id)
+        .then((historyData) => { if (historyData) setVerificationHistory(historyData); })
+        .catch(() => {});
+
+      satelliteService.runAnalysis(id)
+        .then((satData) => { if (satData?.data) setSatelliteReport(satData.data); })
+        .catch(() => {});
     } catch (err) {
       console.error("Project Review Load Error:", err);
       setError(err.message || "Failed to load project details for verification.");
-    } finally {
       setLoading(false);
     }
   };

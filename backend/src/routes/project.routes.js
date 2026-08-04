@@ -19,10 +19,10 @@ router.get("/", projectController.getProjects);
 // GET /api/projects/:id — Get detailed project by ID
 router.get("/:id", projectController.getProjectById);
 
-// POST /api/projects — Create project (NGO only) with GeoJSON & evidence uploads
+// POST /api/projects — Create project (NGO & Admin only) with GeoJSON & evidence uploads
 router.post(
   "/",
-  authorizeRoles("NGO"),
+  authorizeRoles("NGO", "GOVERNMENT"),
   upload.fields([
     { name: "geojsonFile", maxCount: 1 },
     { name: "evidenceFile", maxCount: 5 },
@@ -30,15 +30,16 @@ router.post(
   projectController.createProject
 );
 
-// PUT /api/projects/:id — Update project details or status
-router.put("/:id", projectController.updateProject);
+// PUT /api/projects/:id — Update project details or status (NGO & Admin only)
+router.put("/:id", authorizeRoles("NGO", "GOVERNMENT"), projectController.updateProject);
 
-// DELETE /api/projects/:id — Delete draft project
-router.delete("/:id", projectController.deleteProject);
+// DELETE /api/projects/:id — Delete draft project (NGO & Admin only)
+router.delete("/:id", authorizeRoles("NGO", "GOVERNMENT"), projectController.deleteProject);
 
-// POST /api/projects/:id/documents — Upload additional evidence document
+// POST /api/projects/:id/documents — Upload additional evidence document (NGO & Admin only)
 router.post(
   "/:id/documents",
+  authorizeRoles("NGO", "GOVERNMENT"),
   upload.single("document"),
   projectController.uploadDocument
 );

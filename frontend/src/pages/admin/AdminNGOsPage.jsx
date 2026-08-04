@@ -1,117 +1,124 @@
-import { Search, Filter, Mail, MapPin, MoreVertical, ShieldCheck, ShieldAlert } from "lucide-react";
-import Button from "../../components/common/Button";
-
-const NGOS = [
-  { id: "n1", name: "GreenCoast NGO", email: "arvind@greencoast.in", location: "West Bengal, India", joined: "Oct 12, 2024", projects: 3, status: "Active" },
-  { id: "n2", name: "BluePlanet Foundation", email: "contact@blueplanet.org", location: "Odisha, India", joined: "Oct 10, 2024", projects: 1, status: "Active" },
-  { id: "n3", name: "Coastal Guardians", email: "hello@coastalguardians.in", location: "Tamil Nadu, India", joined: "Oct 05, 2024", projects: 0, status: "Pending Review" },
-  { id: "n4", name: "Island Conservation", email: "admin@islandcon.org", location: "Andaman, India", joined: "Sep 22, 2024", projects: 1, status: "Active" },
-  { id: "n5", name: "Eco Warriors India", email: "info@ecowarriors.in", location: "Odisha, India", joined: "Sep 15, 2024", projects: 2, status: "Suspended" },
-];
+import { useState, useEffect } from "react";
+import { Search, MapPin, Mail, Loader2, Building } from "lucide-react";
+import { projectService } from "../../services/projectService";
 
 export function AdminNGOsPage() {
+  const [ngos, setNgos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const loadNgos = async () => {
+      setLoading(true);
+      try {
+        const projects = await projectService.getAllProjects().catch(() => []);
+        
+        // Group by owner / organization
+        const ngoMap = {};
+        projects.forEach((p) => {
+          const ownerId = p.ownerId || p.owner?.id || "unknown";
+          if (!ngoMap[ownerId]) {
+            ngoMap[ownerId] = {
+              id: ownerId,
+              name: p.owner?.organizationName || p.owner?.fullName || "Registered NGO Partner",
+              email: p.owner?.email || "ngo@karbonshrunkhala.org",
+              location: `${p.district || "Coastal Region"}, ${p.state || "India"}`,
+              projectsCount: 0,
+              status: "Active",
+            };
+          }
+          ngoMap[ownerId].projectsCount += 1;
+        });
+
+        setNgos(Object.values(ngoMap));
+      } catch (err) {
+        console.error("Failed to load NGOs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadNgos();
+  }, []);
+
+  const filteredNgos = ngos.filter((n) =>
+    (n.name + n.email + n.location).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div>
-      {/* Header */}
-      <div className="db-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <h1>Registered NGOs</h1>
-          <p>Review and manage Non-Governmental Organizations on the platform</p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-heading text-2xl font-extrabold text-slate-900">Registered NGO Partners</h1>
+        <p className="text-xs text-slate-500 font-medium mt-1">Review and audit registered Non-Governmental Organizations on the platform</p>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 20 }}>
-        <div className="db-kpi-card" style={{ borderLeft: "3px solid #0F4C81", borderRadius: "0 20px 20px 0" }}>
-          <div className="db-kpi-label">Total NGOs</div>
-          <div className="db-kpi-value" style={{ color: "#0F4C81" }}>12</div>
-        </div>
-        <div className="db-kpi-card" style={{ borderLeft: "3px solid #22A06B", borderRadius: "0 20px 20px 0" }}>
-          <div className="db-kpi-label">Active / Approved</div>
-          <div className="db-kpi-value" style={{ color: "#22A06B" }}>9</div>
-        </div>
-        <div className="db-kpi-card" style={{ borderLeft: "3px solid #d97706", borderRadius: "0 20px 20px 0" }}>
-          <div className="db-kpi-label">Pending Review</div>
-          <div className="db-kpi-value" style={{ color: "#d97706" }}>3</div>
-        </div>
-      </div>
-
-      {/* Filter bar */}
-      <div className="db-card" style={{ marginBottom: 20 }}>
-        <div style={{ padding: "14px 20px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div className="db-searchbar" style={{ flex: 1, minWidth: 200 }}>
-            <Search size={14} />
-            <input type="text" placeholder="Search NGOs by name, email or location..." />
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="relative w-72">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search NGOs by name, email, location..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-600"
+            />
           </div>
-          <button className="db-filter-btn"><Filter size={14} /> Status: All</button>
+          <span className="text-xs text-slate-500 font-medium">Total Registered: {ngos.length}</span>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="db-card">
-        <div className="db-table-wrap">
-          <table className="db-table">
-            <thead>
-              <tr>
-                <th>Organization / Contact</th>
-                <th>Location</th>
-                <th>Projects</th>
-                <th>Registration Date</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {NGOS.map((n) => (
-                <tr key={n.id}>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: "#eff6ff", color: "#0F4C81", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>
-                        {n.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{n.name}</div>
-                        <div style={{ fontSize: 11, color: "#64748b", display: "flex", alignItems: "center", gap: 4 }}><Mail size={10} /> {n.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <MapPin size={14} color="#94a3b8" />
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>{n.location}</span>
-                    </div>
-                  </td>
-                  <td style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{n.projects}</td>
-                  <td style={{ fontSize: 12, color: "#64748b" }}>{n.joined}</td>
-                  <td>
-                    <span style={{ 
-                      padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                      background: n.status === "Active" ? "#dcfce7" : n.status === "Pending Review" ? "#fef3c7" : "#fee2e2",
-                      color: n.status === "Active" ? "#16a34a" : n.status === "Pending Review" ? "#d97706" : "#dc2626"
-                    }}>
-                      {n.status}
-                    </span>
-                  </td>
-                  <td>
-                    {n.status === "Pending Review" ? (
-                      <button style={{ padding: "5px 12px", background: "#22A06B", color: "white", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                        <ShieldCheck size={12} /> Approve
-                      </button>
-                    ) : n.status === "Active" ? (
-                      <button style={{ padding: "5px 12px", background: "white", color: "#ef4444", border: "1px solid #fca5a5", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                        <ShieldAlert size={12} /> Suspend
-                      </button>
-                    ) : (
-                      <button style={{ padding: "5px 12px", background: "white", color: "#22A06B", border: "1px solid #86efac", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                        <ShieldCheck size={12} /> Reactivate
-                      </button>
-                    )}
-                  </td>
+        {loading ? (
+          <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+            <span className="text-xs font-medium">Loading real NGO profiles from database...</span>
+          </div>
+        ) : filteredNgos.length === 0 ? (
+          <div className="p-12 text-center text-xs text-slate-400">
+            No NGO organizations registered yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-100 uppercase text-[10px] text-slate-400 font-bold tracking-wider">
+                <tr>
+                  <th className="p-3.5 pl-5">Organization / Contact</th>
+                  <th className="p-3.5">Location</th>
+                  <th className="p-3.5">Active Projects</th>
+                  <th className="p-3.5 pr-5 text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {filteredNgos.map((n) => (
+                  <tr key={n.id} className="hover:bg-slate-50/50 transition">
+                    <td className="p-3.5 pl-5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                          {n.name.charAt(0)}
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-900 block">{n.name}</span>
+                          <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
+                            <Mail className="w-3 h-3 text-slate-400" /> {n.email}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3.5 text-slate-600 font-medium">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400" /> {n.location}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-bold text-slate-900">{n.projectsCount} Projects</td>
+                    <td className="p-3.5 pr-5 text-right">
+                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full">
+                        ACTIVE
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

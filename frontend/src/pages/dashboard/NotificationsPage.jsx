@@ -1,135 +1,215 @@
-import { useState } from "react";
-import { Bell, CheckCircle, AlertCircle, Info, TrendingUp, Trash2, Check } from "lucide-react";
-
-const NOTIFICATIONS = [
-  { id: 1, type: "success", title: "Credits Verified",          body: "2,460 tCO₂e credits have been verified by NCCR for the Sundarbans Restoration project.",    time: "2 hours ago",  read: false },
-  { id: 2, type: "info",    title: "Verifier Assigned",         body: "A field verifier from NCCR has been assigned to inspect the Gahirmatha Mangrove project.",   time: "1 day ago",    read: false },
-  { id: 3, type: "warning", title: "Document Review Pending",   body: "Your Land Ownership Certificate for Kadathundi Coastline is pending review.",               time: "2 days ago",   read: false },
-  { id: 4, type: "success", title: "Project Submitted",         body: "Kadathundi Coastline Seagrass Restoration has been successfully submitted for verification.", time: "3 days ago",   read: true },
-  { id: 5, type: "info",    title: "Report Generated",          body: "Your Q2 Impact Summary report has been generated and is ready to download.",                 time: "5 days ago",   read: true },
-  { id: 6, type: "error",   title: "Document Rejected",         body: "The GeoJSON boundary for Chilika Wetland was rejected due to incomplete boundary coverage.", time: "1 week ago",   read: true },
-  { id: 7, type: "success", title: "Platform Update",           body: "KarbonShrunkhala v2.1 is live! New satellite analytics features are now available.",        time: "2 weeks ago",  read: true },
-];
+import { useState, useEffect } from "react";
+import { Bell, CheckCircle, AlertCircle, Info, Trash2, Check, Loader2 } from "lucide-react";
+import { supabase } from "../../config/supabase";
 
 const typeConfig = {
-  success: { icon: <CheckCircle size={16} />, color: "#22A06B", bg: "#e9f8f1", dot: "#22A06B" },
-  info:    { icon: <Info size={16} />,        color: "#0F4C81", bg: "#eff6ff", dot: "#0F4C81" },
-  warning: { icon: <AlertCircle size={16} />, color: "#d97706", bg: "#fff8e6", dot: "#d97706" },
-  error:   { icon: <AlertCircle size={16} />, color: "#ef4444", bg: "#fee2e2", dot: "#ef4444" },
+  success: { icon: <CheckCircle size={16} />, color: "#22A06B", bg: "#e9f8f1" },
+  info: { icon: <Info size={16} />, color: "#0F4C81", bg: "#eff6ff" },
+  warning: { icon: <AlertCircle size={16} />, color: "#d97706", bg: "#fff8e6" },
+  error: { icon: <AlertCircle size={16} />, color: "#ef4444", bg: "#fee2e2" },
 };
 
 export function NotificationsPage() {
-  const [items, setItems] = useState(NOTIFICATIONS);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const res = await fetch("http://localhost:5000/api/notifications", {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        setItems(json.data || []);
+      } else {
+        setItems([]);
+      }
+    } catch (err) {
+      console.error("Fetch notifications error:", err);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const markAllRead = async () => {
+    setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch("http://localhost:5000/api/notifications/read-all", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+    } catch (err) {}
+  };
+
+  const markRead = async (id) => {
+    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+    } catch (err) {}
+  };
+
+  const deleteNotif = async (id) => {
+    setItems((prev) => prev.filter((n) => n.id !== id));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`http://localhost:5000/api/notifications/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+    } catch (err) {}
+  };
+
   const filtered = items.filter((n) => {
-    if (filter === "unread") return !n.read;
-    if (filter === "read")   return n.read;
+    if (filter === "unread") return !n.isRead;
+    if (filter === "read") return n.isRead;
     return true;
   });
 
-  const markAllRead = () => setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-  const markRead = (id) => setItems((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
-  const deleteNotif = (id) => setItems((prev) => prev.filter((n) => n.id !== id));
-
-  const unreadCount = items.filter((n) => !n.read).length;
+  const unreadCount = items.filter((n) => !n.isRead).length;
 
   return (
-    <div>
-      <div className="db-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1>Notifications</h1>
-          <p>Stay updated on your projects, credits, and platform activity</p>
+          <h1 className="font-heading text-2xl font-extrabold text-slate-900">Notifications</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">Real-time updates on your registered projects, verification decisions, and credit issuance</p>
         </div>
         {unreadCount > 0 && (
           <button
-            className="db-filter-btn"
             onClick={markAllRead}
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
+            className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition inline-flex items-center gap-1.5 cursor-pointer shrink-0"
           >
             <Check size={14} /> Mark All as Read ({unreadCount})
           </button>
         )}
       </div>
 
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 20 }}>
-        {[
-          { label: "Total",   value: items.length, icon: <Bell size={18} color="#0F4C81" />, bg: "#eff6ff" },
-          { label: "Unread",  value: unreadCount,  icon: <AlertCircle size={18} color="#d97706" />, bg: "#fff8e6" },
-          { label: "Read",    value: items.length - unreadCount, icon: <CheckCircle size={18} color="#22A06B" />, bg: "#e9f8f1" },
-        ].map((k) => (
-          <div key={k.label} className="db-kpi-card">
-            <div className="db-kpi-icon" style={{ background: k.bg }}>{k.icon}</div>
-            <div className="db-kpi-label">{k.label}</div>
-            <div className="db-kpi-value" style={{ fontSize: 22 }}>{k.value}</div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2 border-l-4 border-l-blue-600">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Bell className="w-5 h-5" />
           </div>
-        ))}
-      </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Notifications</span>
+          <span className="font-heading text-2xl font-extrabold text-slate-900 block">{items.length}</span>
+        </div>
 
-      {/* Filter tabs */}
-      <div style={{ marginBottom: 16 }}>
-        <div className="db-tabs">
-          {["all","unread","read"].map((t) => (
-            <button key={t} className={`db-tab${filter===t?" active":""}`} onClick={()=>setFilter(t)} style={{ textTransform: "capitalize" }}>
-              {t}
-            </button>
-          ))}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2 border-l-4 border-l-amber-600">
+          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Unread Alerts</span>
+          <span className="font-heading text-2xl font-extrabold text-slate-900 block">{unreadCount}</span>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2 border-l-4 border-l-emerald-600">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Archived / Read</span>
+          <span className="font-heading text-2xl font-extrabold text-slate-900 block">{items.length - unreadCount}</span>
         </div>
       </div>
 
-      {/* Notifications list */}
-      <div className="db-card">
-        <div style={{ padding: "8px 20px" }}>
-          {filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 24px", color: "#94a3b8" }}>
-              <Bell size={40} style={{ marginBottom: 12, opacity: .5 }} />
-              <p>No notifications found</p>
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600 w-fit">
+        {["all", "unread", "read"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setFilter(t)}
+            className={`px-3 py-1 rounded-lg capitalize transition cursor-pointer ${
+              filter === t ? "bg-white text-emerald-700 shadow-2xs font-extrabold" : "hover:text-slate-900"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* Notifications List */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4">
+          {loading ? (
+            <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
+              <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+              <span className="text-xs font-medium">Loading notifications...</span>
             </div>
-          ) : filtered.map((n) => {
-            const cfg = typeConfig[n.type];
-            return (
-              <div
-                key={n.id}
-                className="db-notif-item"
-                style={{ background: n.read ? "transparent" : "#fafcff", borderRadius: 10, padding: "14px 12px", marginBottom: 2 }}
-              >
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: cfg.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: cfg.color }}>
-                  {cfg.icon}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                    <h4 style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#0f172a" }}>{n.title}</h4>
-                    {!n.read && (
-                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#0F4C81", flexShrink: 0 }} />
-                    )}
-                  </div>
-                  <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 4px", lineHeight: 1.5 }}>{n.body}</p>
-                  <span style={{ fontSize: 10, color: "#94a3b8" }}>{n.time}</span>
-                </div>
-                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                  {!n.read && (
-                    <button
-                      onClick={() => markRead(n.id)}
-                      className="db-view-btn"
-                      style={{ padding: "5px 8px" }}
-                      title="Mark as read"
-                    >
-                      <Check size={12} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteNotif(n.id)}
-                    className="db-view-btn"
-                    style={{ padding: "5px 8px", color: "#ef4444", borderColor: "#fee2e2" }}
-                    title="Delete"
+          ) : filtered.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 space-y-2">
+              <Bell className="w-8 h-8 mx-auto text-slate-300 stroke-[1.5]" />
+              <p className="font-bold text-slate-600">No notifications found.</p>
+              <p className="text-[11px] text-slate-400">Activity updates on project registration and verification will appear here.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map((n) => {
+                const cfg = typeConfig[n.type] || typeConfig.info;
+                return (
+                  <div
+                    key={n.id}
+                    className={`p-4 rounded-xl border transition flex items-start gap-3.5 ${
+                      n.isRead ? "bg-white border-slate-100" : "bg-slate-50/80 border-slate-200 shadow-2xs"
+                    }`}
                   >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: cfg.bg, color: cfg.color }}>
+                      {cfg.icon}
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-heading text-xs font-bold text-slate-900">{n.title}</h4>
+                        {!n.isRead && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-600 font-medium leading-relaxed">{n.message || n.body}</p>
+                      <span className="text-[10px] text-slate-400 font-mono block">
+                        {new Date(n.createdAt || Date.now()).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!n.isRead && (
+                        <button
+                          onClick={() => markRead(n.id)}
+                          className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition cursor-pointer"
+                          title="Mark as read"
+                        >
+                          <Check size={14} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteNotif(n.id)}
+                        className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition cursor-pointer"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

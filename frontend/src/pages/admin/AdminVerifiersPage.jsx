@@ -1,19 +1,17 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Plus, UserCheck, Mail, Building, MapPin, MoreVertical, Loader2 } from "lucide-react";
+import { Search, Plus, UserCheck, Building, Loader2 } from "lucide-react";
 import Button from "../../components/common/Button";
-// Note: In a real app, this would use Axios to call the backend endpoint. We'll use fetch here.
+import { supabase } from "../../config/supabase";
 
 export function AdminVerifiersPage() {
-  const [verifiers, setVerifiers] = useState([
-    { id: "v1", name: "SustainCert Global", org: "SustainCert", email: "contact@sustaincert.com", joined: "Jan 12, 2024", projects: 12, status: "Active" },
-    { id: "v2", name: "EcoAudit India", org: "EcoAudit", email: "info@ecoaudit.in", joined: "Feb 05, 2024", projects: 8, status: "Active" },
-    { id: "v3", name: "GreenCheck Verifiers", org: "GreenCheck", email: "verify@greencheck.org", joined: "Mar 22, 2024", projects: 3, status: "Inactive" },
-  ]);
-  
+  const [verifiers, setVerifiers] = useState([]);
+  const [fetching, setFetching] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [formData, setFormData] = useState({
     fullName: "",
     organizationName: "",
@@ -21,6 +19,39 @@ export function AdminVerifiersPage() {
     password: "",
     phoneNumber: ""
   });
+
+  const getAuthHeader = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    return token ? `Bearer ${token}` : "";
+  };
+
+  const fetchVerifiers = async () => {
+    setFetching(true);
+    try {
+      const authHeader = await getAuthHeader();
+      const res = await fetch("http://localhost:5000/api/admin/verifiers", {
+        headers: {
+          "Authorization": authHeader
+        }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setVerifiers(json.data || []);
+      } else {
+        setVerifiers([]);
+      }
+    } catch (err) {
+      console.error("Fetch verifiers error:", err);
+      setVerifiers([]);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVerifiers();
+  }, []);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -31,13 +62,12 @@ export function AdminVerifiersPage() {
     setSuccess("");
 
     try {
-      // In a fully integrated environment, we call our new backend route:
-      const res = await fetch("/api/admin/verifiers", {
+      const authHeader = await getAuthHeader();
+      const res = await fetch("http://localhost:5000/api/admin/verifiers", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Need to pass the admin's auth token in real implementation
-          "Authorization": `Bearer ${localStorage.getItem("sb-token") || "mock-token"}`
+          "Authorization": authHeader
         },
         body: JSON.stringify(formData)
       });
@@ -45,167 +75,130 @@ export function AdminVerifiersPage() {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.message || "Failed to create verifier");
+        throw new Error(data.message || "Failed to create verifier account");
       }
 
       setSuccess("Verifier account created successfully.");
-      
-      // Add to local state to reflect UI change instantly (mock)
-      setVerifiers([{
-        id: data.data?.id || `v${Date.now()}`,
-        name: formData.fullName,
-        org: formData.organizationName,
-        email: formData.email,
-        joined: "Just now",
-        projects: 0,
-        status: "Active"
-      }, ...verifiers]);
-      
-      setTimeout(() => setModalOpen(false), 2000);
+      await fetchVerifiers();
+      setTimeout(() => setModalOpen(false), 1500);
       setFormData({ fullName: "", organizationName: "", email: "", password: "", phoneNumber: "" });
     } catch (err) {
-      // Fallback for UI demonstration if backend isn't fully running or auth token missing
-      console.warn("Backend call failed, using mock insertion:", err);
-      
-      setVerifiers([{
-        id: `v${Date.now()}`,
-        name: formData.fullName,
-        org: formData.organizationName,
-        email: formData.email,
-        joined: "Just now",
-        projects: 0,
-        status: "Active"
-      }, ...verifiers]);
-      
-      setSuccess("Verifier account created (Mocked).");
-      setTimeout(() => setModalOpen(false), 2000);
-      setFormData({ fullName: "", organizationName: "", email: "", password: "", phoneNumber: "" });
+      setError(err.message || "Failed to create verifier account.");
     } finally {
       setLoading(false);
     }
   };
 
+  const filteredVerifiers = verifiers.filter((v) =>
+    (v.fullName || v.name || v.organizationName || v.email || "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div>
-      {/* Header */}
-      <div className="db-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1>Corporate Verifiers</h1>
-          <p>Manage accredited verification bodies and assign projects</p>
+          <h1 className="font-heading text-2xl font-extrabold text-slate-900">Verifier Management</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">Manage corporate verifier credentials and authorization roles</p>
         </div>
-        <Button onClick={() => { setModalOpen(true); setSuccess(""); setError(""); }} className="rounded-xl px-5 py-2.5 flex items-center gap-2 text-sm">
-          <Plus size={16} /> Create Verifier
+        <Button onClick={() => setModalOpen(true)} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" /> Provision Verifier Account
         </Button>
       </div>
 
-      {/* Filter bar */}
-      <div className="db-card" style={{ marginBottom: 20 }}>
-        <div style={{ padding: "14px 20px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div className="db-searchbar" style={{ flex: 1, minWidth: 200 }}>
-            <Search size={14} />
-            <input type="text" placeholder="Search verifiers by name, organization or email..." />
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="relative w-72">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search verifiers by name, org, email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-600"
+            />
           </div>
-          <button className="db-filter-btn"><Filter size={14} /> Filter</button>
+          <span className="text-xs text-slate-500 font-medium">Total Verifiers: {verifiers.length}</span>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="db-card">
-        <div className="db-table-wrap">
-          <table className="db-table">
-            <thead>
-              <tr>
-                <th>Verifier / Contact</th>
-                <th>Organization</th>
-                <th>Projects Assigned</th>
-                <th>Date Added</th>
-                <th>Status</th>
-                <th style={{ width: 50 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {verifiers.map((v) => (
-                <tr key={v.id}>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: "#e9f8f1", color: "#22A06B", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>
-                        {v.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{v.name}</div>
-                        <div style={{ fontSize: 11, color: "#64748b", display: "flex", alignItems: "center", gap: 4 }}><Mail size={10} /> {v.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Building size={14} color="#94a3b8" />
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>{v.org}</span>
-                    </div>
-                  </td>
-                  <td style={{ fontWeight: 700, fontSize: 13, color: "#0F4C81" }}>{v.projects}</td>
-                  <td style={{ fontSize: 12, color: "#64748b" }}>{v.joined}</td>
-                  <td>
-                    <span style={{ 
-                      padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                      background: v.status === "Active" ? "#dcfce7" : "#f1f5f9",
-                      color: v.status === "Active" ? "#16a34a" : "#64748b"
-                    }}>
-                      {v.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8" }}><MoreVertical size={16} /></button>
-                  </td>
+        {fetching ? (
+          <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+            <span className="text-xs font-medium">Loading verifiers from database...</span>
+          </div>
+        ) : filteredVerifiers.length === 0 ? (
+          <div className="p-12 text-center text-xs text-slate-400 space-y-2">
+            <UserCheck className="w-8 h-8 mx-auto text-slate-300 stroke-[1.5]" />
+            <p className="font-bold text-slate-600">No verifier accounts found.</p>
+            <p className="text-[11px]">Click 'Provision Verifier Account' above to register a corporate verifier.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-100 uppercase text-[10px] text-slate-400 font-bold tracking-wider">
+                <tr>
+                  <th className="p-3.5 pl-5">Verifier / Organization</th>
+                  <th className="p-3.5">Email</th>
+                  <th className="p-3.5">Phone</th>
+                  <th className="p-3.5">Role</th>
+                  <th className="p-3.5 pr-5 text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {filteredVerifiers.map((v) => (
+                  <tr key={v.id} className="hover:bg-slate-50/50 transition">
+                    <td className="p-3.5 pl-5">
+                      <span className="font-bold text-slate-900 block">{v.fullName || v.name || "Corporate Verifier"}</span>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <Building className="w-3 h-3 text-slate-400" /> {v.organizationName || v.org || "National Verifier Organization"}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-mono text-slate-600">{v.email}</td>
+                    <td className="p-3.5 font-mono text-slate-500">{v.phoneNumber || v.phone || "—"}</td>
+                    <td className="p-3.5 font-bold text-emerald-700">VERIFIER</td>
+                    <td className="p-3.5 pr-5 text-right">
+                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full">
+                        ACTIVE
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Create Verifier Modal */}
       {modalOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(2px)" }}>
-          <div style={{ background: "white", width: 500, borderRadius: 20, padding: 30, boxShadow: "0 20px 40px rgba(0,0,0,0.1)", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 4px" }}>Create Verifier Account</h3>
-                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Register a new verification body on the platform</p>
-              </div>
-              <button onClick={() => setModalOpen(false)} style={{ background: "#f1f5f9", border: "none", width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b" }}><X size={16} /></button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="font-heading text-lg font-extrabold text-slate-900">Provision Verifier Account</h3>
             
-            {error && <div style={{ padding: 12, background: "#fee2e2", color: "#991b1b", borderRadius: 10, fontSize: 12, marginBottom: 16 }}>{error}</div>}
-            {success && <div style={{ padding: 12, background: "#dcfce7", color: "#166534", borderRadius: 10, fontSize: 12, marginBottom: 16 }}>{success}</div>}
+            {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-bold">{error}</div>}
+            {success && <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 font-bold">{success}</div>}
 
-            <form onSubmit={handleCreateVerifier} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <form onSubmit={handleCreateVerifier} className="space-y-3">
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>Full Name / Contact Person</label>
-                <input required type="text" name="fullName" value={formData.fullName} onChange={handleChange} style={{ width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} placeholder="e.g. Sarah Jenkins" />
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Full Name</label>
+                <input name="fullName" type="text" value={formData.fullName} onChange={handleChange} required className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-600" />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>Organization Name</label>
-                <input required type="text" name="organizationName" value={formData.organizationName} onChange={handleChange} style={{ width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} placeholder="e.g. SustainCert Global" />
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Organization Name</label>
+                <input name="organizationName" type="text" value={formData.organizationName} onChange={handleChange} required className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-600" />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>Email Address</label>
-                <input required type="email" name="email" value={formData.email} onChange={handleChange} style={{ width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} placeholder="sarah@sustaincert.com" />
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Email Address</label>
+                <input name="email" type="email" value={formData.email} onChange={handleChange} required className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-600" />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>Phone Number (Optional)</label>
-                <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} style={{ width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} placeholder="+1 234 567 8900" />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>Temporary Password</label>
-                <input required type="password" name="password" value={formData.password} onChange={handleChange} style={{ width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} placeholder="••••••••" />
-                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 6 }}>Verifier will be forced to change this upon first login.</p>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Password</label>
+                <input name="password" type="password" value={formData.password} onChange={handleChange} required className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-600" />
               </div>
 
-              <div style={{ marginTop: 10 }}>
-                <Button type="submit" disabled={loading} className="w-full justify-center rounded-xl py-3 text-sm">
-                  {loading ? <Loader2 className="animate-spin" size={18} /> : "Create Verifier Account"}
-                </Button>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" disabled={loading} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">{loading ? "Creating..." : "Create Account"}</button>
               </div>
             </form>
           </div>

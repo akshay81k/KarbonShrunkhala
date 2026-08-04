@@ -63,22 +63,7 @@ export function MonitoringPage() {
     }
   }, [selectedProjectId]);
 
-  const analysis = report?.analysis || {
-    satellite_source: "Sentinel-2 (COPERNICUS/S2_SR_HARMONIZED)",
-    current_mean_ndvi: 0.742,
-    current_mean_evi: 0.589,
-    vegetation_health: "Dense Mangrove Canopy",
-    growth_improvement_pct: 24.5,
-    analysis_date: new Date().toISOString().split("T")[0],
-    monthly_time_series: [
-      { month: "Feb 2026", ndvi: 0.38, evi: 0.29 },
-      { month: "Mar 2026", ndvi: 0.45, evi: 0.35 },
-      { month: "Apr 2026", ndvi: 0.53, evi: 0.41 },
-      { month: "May 2026", ndvi: 0.62, evi: 0.48 },
-      { month: "Jun 2026", ndvi: 0.69, evi: 0.54 },
-      { month: "Jul 2026", ndvi: 0.74, evi: 0.59 },
-    ],
-  };
+  const analysis = report?.analysis || null;
 
   return (
     <div className="space-y-6">
@@ -131,8 +116,16 @@ export function MonitoringPage() {
         </div>
       </div>
 
-      {/* Main Indices Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {loading || !analysis ? (
+        <div className="p-16 bg-white rounded-2xl border border-slate-200 text-center text-slate-400 flex flex-col items-center gap-2">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <span className="text-xs font-bold text-slate-700">Executing Sentinel-2 Multispectral Analysis via GEE...</span>
+          <span className="text-[11px] text-slate-400">Processing 10m spatial resolution satellite imagery</span>
+        </div>
+      ) : (
+        <>
+          {/* Main Indices Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Mean NDVI Card */}
         <Card className="flex items-center justify-between p-5 border border-slate-200">
@@ -238,6 +231,8 @@ export function MonitoringPage() {
           <span className="font-mono text-[10px] text-slate-400">Last Synced: {analysis.analysis_date}</span>
         </div>
       </Card>
+      </>
+      )}
     </div>
   );
 }

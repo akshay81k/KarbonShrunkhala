@@ -29,6 +29,7 @@ class ProjectRepository {
       where,
       include: {
         owner: { select: { fullName: true, organizationName: true } },
+        documents: true,
         satelliteReports: { orderBy: { reportDate: "desc" }, take: 1 },
       },
       orderBy: { createdAt: "desc" },

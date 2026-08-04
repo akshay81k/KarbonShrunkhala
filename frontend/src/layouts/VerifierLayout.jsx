@@ -17,9 +17,9 @@ const NAV = [
       {
         name: "Projects", icon: FolderKanban,
         children: [
-          { name: "Pending Verification", path: "/verifier/projects?tab=pending", base: "/verifier/projects" },
-          { name: "Accepted Projects", path: "/verifier/projects?tab=accepted", base: "/verifier/projects" },
-          { name: "Rejected Projects", path: "/verifier/projects?tab=rejected", base: "/verifier/projects" },
+          { name: "Pending Verification", path: "/verifier/projects?status=SUBMITTED", base: "/verifier/projects" },
+          { name: "Accepted Projects", path: "/verifier/projects?status=APPROVED", base: "/verifier/projects" },
+          { name: "Rejected Projects", path: "/verifier/projects?status=REJECTED", base: "/verifier/projects" },
           { name: "All Projects", path: "/verifier/projects", base: "/verifier/projects" },
         ],
       },
@@ -27,8 +27,6 @@ const NAV = [
       { name: "Documents", path: "/verifier/documents", icon: FileText },
       { name: "Reports", path: "/verifier/reports", icon: FileSpreadsheet },
       { name: "Credits", path: "/verifier/credits", icon: Award },
-      { name: "Organizations", path: "/verifier/organizations", icon: Building },
-      { name: "Users", path: "/verifier/users", icon: Users },
     ],
   },
   {

@@ -34,6 +34,10 @@ export const projectService = {
     return this.getAllProjects(params);
   },
 
+  async getMyProjects(params = {}) {
+    return this.getAllProjects(params);
+  },
+
   /**
    * Fetch project by ID
    */

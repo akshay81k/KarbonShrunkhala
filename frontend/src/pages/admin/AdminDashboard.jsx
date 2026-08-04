@@ -1,179 +1,170 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { projectService } from "../../services/projectService";
+import { creditService } from "../../services/creditService";
+import { Badge } from "../../components/Badge";
 import {
   Users, UserCheck, FolderKanban, Award, ShieldAlert,
-  ArrowRight, Activity, Globe, Clock, CheckCircle
+  ArrowRight, Activity, Globe, Clock, CheckCircle, Loader2
 } from "lucide-react";
 
 export function AdminDashboard() {
+  const [projects, setProjects] = useState([]);
+  const [credits, setCredits] = useState([]);
+  const [verifiersCount, setVerifiersCount] = useState(0);
+  const [ngosCount, setNgosCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAdminStats = async () => {
+      setLoading(true);
+      try {
+        const [projData, creditData] = await Promise.all([
+          projectService.getAllProjects().catch(() => []),
+          creditService.getAllCredits().catch(() => []),
+        ]);
+        setProjects(projData);
+        setCredits(creditData);
+
+        // Fetch verifiers count
+        const vRes = await fetch("/api/admin/verifiers").catch(() => null);
+        if (vRes && vRes.ok) {
+          const vJson = await vRes.json();
+          setVerifiersCount((vJson.data || vJson || []).length);
+        }
+
+        // Distinct NGO owners count
+        const uniqueNgos = new Set(projData.map((p) => p.ownerId).filter(Boolean));
+        setNgosCount(uniqueNgos.size || 1);
+      } catch (err) {
+        console.error("Admin dashboard load error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAdminStats();
+  }, []);
+
+  const totalProjects = projects.length;
+  const pendingCount = projects.filter((p) => p.status === "SUBMITTED" || p.status === "UNDER_VERIFICATION").length;
+  const totalCredits = credits.reduce((sum, c) => sum + (parseFloat(c.quantity) || 0), 0);
+
   return (
-    <div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-heading text-2xl font-extrabold text-slate-900">Government System Overview</h1>
+        <p className="text-xs text-slate-500 font-medium mt-1">Platform monitoring, Blue Carbon projects, and Polygon Amoy tokenomics</p>
+      </div>
+
       {/* ── KPI Cards ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
-        <KPICard
-          icon={<Users size={22} color="#0F4C81" />}
-          iconBg="#eff6ff"
-          label="Registered NGOs"
-          value="12"
-          accentBar="#0F4C81"
-        />
-        <KPICard
-          icon={<UserCheck size={22} color="#22A06B" />}
-          iconBg="#e9f8f1"
-          label="Active Verifiers"
-          value="4"
-          accentBar="#22A06B"
-        />
-        <KPICard
-          icon={<FolderKanban size={22} color="#d97706" />}
-          iconBg="#fff8e6"
-          label="Total Projects"
-          value="35"
-          sub="7 Pending Verification"
-          accentBar="#d97706"
-        />
-        <KPICard
-          icon={<Award size={22} color="#7c3aed" />}
-          iconBg="#f3eeff"
-          label="Total Verified Credits"
-          value="12.45K"
-          unit="tCO₂e"
-          accentBar="#7c3aed"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2 border-l-4 border-l-blue-600">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Users className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Registered NGOs</span>
+          <span className="font-heading text-2xl font-extrabold text-slate-900 block">{ngosCount}</span>
+          <span className="text-[10px] font-bold text-blue-700 block">Registered Organizations</span>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2 border-l-4 border-l-emerald-600">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <UserCheck className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Verifiers</span>
+          <span className="font-heading text-2xl font-extrabold text-slate-900 block">{verifiersCount}</span>
+          <span className="text-[10px] font-bold text-emerald-700 block">Corporate Auditors</span>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2 border-l-4 border-l-amber-600">
+          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <FolderKanban className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Projects</span>
+          <span className="font-heading text-2xl font-extrabold text-slate-900 block">{totalProjects}</span>
+          <span className="text-[10px] font-bold text-amber-700 block">{pendingCount} Pending Verification</span>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2 border-l-4 border-l-purple-600">
+          <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+            <Award className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tokenized Credits</span>
+          <span className="font-heading text-2xl font-extrabold text-slate-900 block">{totalCredits.toLocaleString()} tCO₂e</span>
+          <span className="text-[10px] font-bold text-purple-700 block">Polygon Amoy Testnet</span>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
-        
-        {/* Main Content Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          
-          {/* Recent NGO Registrations */}
-          <div className="db-card">
-            <div className="db-card-header">
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>Recent NGO Registrations</h3>
-              <Link to="/admin/ngos" className="db-card-link">View all</Link>
-            </div>
-            <div className="db-table-wrap">
-              <table className="db-table">
-                <thead>
-                  <tr>
-                    <th>Organization</th>
-                    <th>Region</th>
-                    <th>Joined</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { name: "GreenCoast NGO", region: "West Bengal", joined: "Oct 12, 2024", status: "Active" },
-                    { name: "BluePlanet Foundation", region: "Odisha", joined: "Oct 10, 2024", status: "Active" },
-                    { name: "Coastal Guardians", region: "Tamil Nadu", joined: "Oct 05, 2024", status: "Pending Review" },
-                  ].map((ngo, i) => (
-                    <tr key={i}>
-                      <td style={{ fontWeight: 600 }}>{ngo.name}</td>
-                      <td style={{ fontSize: 12, color: "#64748b" }}>{ngo.region}</td>
-                      <td style={{ fontSize: 12, color: "#64748b" }}>{ngo.joined}</td>
-                      <td>
-                        <span style={{ 
-                          padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                          background: ngo.status === "Active" ? "#dcfce7" : "#fef3c7",
-                          color: ngo.status === "Active" ? "#16a34a" : "#d97706"
-                        }}>
-                          {ngo.status}
-                        </span>
-                      </td>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Projects Table */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-heading text-sm font-extrabold text-slate-900">Recent Platform Projects</h3>
+            <Link to="/admin/projects" className="text-xs font-bold text-emerald-600 hover:text-emerald-700">View all</Link>
+          </div>
+
+          <div className="p-4 flex-1">
+            {loading ? (
+              <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+                <span className="text-xs font-medium">Loading real projects...</span>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="p-12 text-center text-xs text-slate-400">No projects submitted yet.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-100 uppercase text-[10px] text-slate-400 font-bold tracking-wider">
+                    <tr>
+                      <th className="p-3 pl-4">Project Name</th>
+                      <th className="p-3">Ecosystem</th>
+                      <th className="p-3">State</th>
+                      <th className="p-3 text-right pr-4">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Platform Analytics Placeholder */}
-          <div className="db-card" style={{ height: 300, display: "flex", flexDirection: "column" }}>
-            <div className="db-card-header">
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>Platform Activity</h3>
-            </div>
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", margin: 16, borderRadius: 12, border: "1px dashed #cbd5e1", color: "#94a3b8" }}>
-              <div style={{ textAlign: "center" }}>
-                <Activity size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Analytics Chart Placeholder</div>
-                <div style={{ fontSize: 11 }}>Project submissions vs. Verified credits over time</div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {projects.slice(0, 5).map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50/50 transition">
+                        <td className="p-3 pl-4 font-bold text-slate-900">{p.projectName || p.name}</td>
+                        <td className="p-3 text-slate-600">{p.ecosystemType}</td>
+                        <td className="p-3 text-slate-500">{p.state}</td>
+                        <td className="p-3 text-right pr-4">
+                          <Badge variant={p.status}>{p.status}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            )}
           </div>
-          
         </div>
 
-        {/* Right Sidebar Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          
-          {/* Quick Actions */}
-          <div className="db-card">
-            <div className="db-card-header">
-              <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Quick Actions</h3>
+        {/* Right Sidebar: Recent Token Batches */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+          <h3 className="font-heading text-sm font-extrabold text-slate-900">Recent ERC-1155 Token Batches</h3>
+          {credits.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+              No carbon credits minted on-chain yet.
             </div>
-            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-              <Link to="/admin/verifiers" style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, background: "#f8fafc", border: "1px solid #e8eff6", borderRadius: 10, textDecoration: "none", color: "#0f172a" }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#e9f8f1", color: "#22A06B", display: "flex", alignItems: "center", justifyContent: "center" }}><UserCheck size={16} /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>Create Verifier</div>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>Add new certification partner</div>
+          ) : (
+            <div className="space-y-2">
+              {credits.slice(0, 4).map((c) => (
+                <div key={c.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold font-mono text-slate-900 block">{c.tokenId || c.id.substring(0, 8)}</span>
+                    <span className="text-[10px] text-slate-500">{c.project?.projectName || "Sundarbans Site"}</span>
+                  </div>
+                  <span className="font-extrabold text-emerald-700">{c.quantity} tCO₂e</span>
                 </div>
-                <ArrowRight size={14} color="#94a3b8" />
-              </Link>
-              <Link to="/admin/projects" style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, background: "#f8fafc", border: "1px solid #e8eff6", borderRadius: 10, textDecoration: "none", color: "#0f172a" }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#eff6ff", color: "#0F4C81", display: "flex", alignItems: "center", justifyContent: "center" }}><FolderKanban size={16} /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>Assign Projects</div>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>Map projects to verifiers</div>
-                </div>
-                <ArrowRight size={14} color="#94a3b8" />
-              </Link>
+              ))}
             </div>
-          </div>
-
-          {/* System Status */}
-          <div className="db-card">
-            <div className="db-card-header">
-              <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>System Status</h3>
-            </div>
-            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ color: "#22A06B" }}><Globe size={18} /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>Polygon Registry Sync</div>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>Synced 5 minutes ago</div>
-                </div>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22A06B" }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ color: "#22A06B" }}><Activity size={18} /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>Earth Engine API</div>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>Operational</div>
-                </div>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22A06B" }} />
-              </div>
-            </div>
-          </div>
-
+          )}
+          <Link to="/admin/credits" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1">
+            View All Credits <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
-    </div>
-  );
-}
-
-function KPICard({ icon, iconBg, label, value, sub, accentBar, unit }) {
-  return (
-    <div className="db-kpi-card" style={{ borderLeft: `3px solid ${accentBar}`, borderRadius: "0 20px 20px 0" }}>
-      <div className="db-kpi-icon" style={{ background: iconBg }}>{icon}</div>
-      <div className="db-kpi-label">{label}</div>
-      <div className="db-kpi-value">
-        {value}
-        {unit && <small style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginLeft: 4 }}>{unit}</small>}
-      </div>
-      {sub && <div className="db-kpi-sub">{sub}</div>}
     </div>
   );
 }

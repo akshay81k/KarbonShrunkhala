@@ -43,6 +43,9 @@ const profileRoutes = require("./routes/profile.routes");
 const projectRoutes = require("./routes/project.routes");
 const satelliteRoutes = require("./routes/satellite.routes");
 const verificationRoutes = require("./routes/verification.routes");
+const carbonCreditRoutes = require("./routes/carbonCredit.routes");
+const notificationRoutes = require("./routes/notification.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 // ─── Health Check ───
 app.get("/api/health", (req, res) => {
@@ -64,6 +67,9 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/satellite", satelliteRoutes);
 app.use("/api/verifications", verificationRoutes);
+app.use("/api/credits", carbonCreditRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ─── 404 Handler ───
 app.use((req, res) => {

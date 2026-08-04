@@ -1,17 +1,5 @@
 /**
  * hardhat.config.js — Hardhat Configuration
- *
- * Purpose: Configures the Hardhat development environment for
- * compiling, deploying, and testing Solidity smart contracts.
- *
- * Networks:
- * - hardhat: Local in-memory blockchain for testing
- * - amoy: Polygon Amoy Testnet (as specified in TRD Section 6)
- *
- * Contracts will be added in Phase 8 — Blockchain Module:
- * - CarbonRegistry.sol
- * - CarbonCredit.sol
- * - Marketplace.sol
  */
 
 require("dotenv").config();
@@ -22,9 +10,10 @@ module.exports = {
   solidity: {
     version: "0.8.24",
     settings: {
+      evmVersion: "cancun",
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 1000,
       },
     },
   },
@@ -34,6 +23,7 @@ module.exports = {
       url: process.env.ALCHEMY_RPC_URL || (process.env.ALCHEMY_API_KEY ? `https://polygon-amoy.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}` : ""),
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 80002,
+      gasPrice: 25000000000, // 25 Gwei to optimize deploy cost on Amoy testnet
     },
   },
   paths: {
