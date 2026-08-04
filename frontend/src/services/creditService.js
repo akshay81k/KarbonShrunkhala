@@ -35,14 +35,25 @@ export const creditService = {
   },
 
   /**
+   * Dynamic calculation breakdown based on IPCC Tier 2 / Verra VM0033 principles
+   */
+  calculateCredits: async (projectId) => {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE_URL}/credits/calculate/${projectId}`, { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to calculate carbon credits.");
+    return data.data;
+  },
+
+  /**
    * Mint ERC-1155 tokens on Polygon Amoy for an approved project
    */
-  mintCredits: async (projectId, amount) => {
+  mintCredits: async (projectId, quantity, overrideReason) => {
     const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE_URL}/credits/mint`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ projectId, amount }),
+      body: JSON.stringify({ projectId, quantity, overrideReason }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Failed to mint credits on Polygon Amoy.");

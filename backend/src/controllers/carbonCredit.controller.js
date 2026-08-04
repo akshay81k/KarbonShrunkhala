@@ -1,14 +1,38 @@
 const carbonCreditService = require("../services/carbonCredit.service");
 
 class CarbonCreditController {
+  async calculateCredits(req, res) {
+    try {
+      const { projectId } = req.params;
+      const calculation = await carbonCreditService.calculateCredits(projectId);
+      return res.status(200).json({
+        success: true,
+        data: calculation,
+      });
+    } catch (err) {
+      console.error("Calculate Credits Error:", err);
+      return res.status(400).json({
+        success: false,
+        message: err.message || "Failed to calculate carbon credits.",
+      });
+    }
+  }
+
   async mintCredits(req, res) {
     try {
-      const { projectId, amount } = req.body;
+      const { projectId, amount, quantity, overrideReason } = req.body;
       if (!projectId) {
         return res.status(400).json({ success: false, message: "projectId is required." });
       }
 
-      const result = await carbonCreditService.mintProjectCredits(projectId, req.user, amount);
+      const mintAmount = quantity || amount;
+
+      const result = await carbonCreditService.mintProjectCredits(
+        projectId,
+        req.user,
+        mintAmount,
+        overrideReason
+      );
       return res.status(200).json({
         success: true,
         message: "Successfully minted ERC-1155 Blue Carbon tokens on Polygon Amoy Testnet!",
