@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Bell, CheckCircle, AlertCircle, Info, Trash2, Check, Loader2 } from "lucide-react";
 import { supabase } from "../../config/supabase";
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000/api";
+
 const typeConfig = {
   success: { icon: <CheckCircle size={16} />, color: "#22A06B", bg: "#e9f8f1" },
   info: { icon: <Info size={16} />, color: "#0F4C81", bg: "#eff6ff" },
@@ -20,7 +22,7 @@ export function NotificationsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const res = await fetch("http://localhost:5000/api/notifications", {
+      const res = await fetch(`${API_BASE_URL}/notifications`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
         },
@@ -48,7 +50,7 @@ export function NotificationsPage() {
     setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await fetch("http://localhost:5000/api/notifications/read-all", {
+      await fetch(`${API_BASE_URL}/notifications/read-all`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
@@ -59,7 +61,7 @@ export function NotificationsPage() {
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+      await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
@@ -70,7 +72,7 @@ export function NotificationsPage() {
     setItems((prev) => prev.filter((n) => n.id !== id));
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await fetch(`http://localhost:5000/api/notifications/${id}`, {
+      await fetch(`${API_BASE_URL}/notifications/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
