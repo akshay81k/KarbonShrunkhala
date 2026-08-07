@@ -46,6 +46,7 @@ const verificationRoutes = require("./routes/verification.routes");
 const carbonCreditRoutes = require("./routes/carbonCredit.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const adminRoutes = require("./routes/admin.routes");
+const marketplaceRoutes = require("./routes/marketplace.routes");
 
 // ─── Health Check ───
 app.get("/api/health", (req, res) => {
@@ -70,6 +71,7 @@ app.use("/api/verifications", verificationRoutes);
 app.use("/api/credits", carbonCreditRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/marketplace", marketplaceRoutes);
 
 // ─── 404 Handler ───
 app.use((req, res) => {

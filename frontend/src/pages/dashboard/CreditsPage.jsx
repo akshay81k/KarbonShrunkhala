@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { creditService } from "../../services/creditService";
+import { marketplaceService } from "../../services/marketplaceService";
 import { projectService } from "../../services/projectService";
 import {
   Award, ShieldCheck, Zap, ExternalLink, Loader2,
   Sparkles, Calculator, CheckCircle, AlertTriangle, Info,
+  ShoppingBag, DollarSign, Tag
 } from "lucide-react";
 import { Badge } from "../../components/Badge";
 
@@ -37,6 +39,14 @@ export function CreditsPage() {
   const [overrideReason, setOverrideReason] = useState("");
   const [minting, setMinting] = useState(false);
   const [mintResult, setMintResult] = useState(null);
+
+  // Listing Modal State
+  const [listingCredit, setListingCredit] = useState(null);
+  const [listPrice, setListPrice] = useState(15.0);
+  const [listQty, setListQty] = useState(10);
+  const [listingLoading, setListingLoading] = useState(false);
+  const [listingSuccess, setListingSuccess] = useState("");
+  const [listingError, setListingError] = useState("");
 
   const loadData = async () => {
     setLoading(true);
@@ -82,7 +92,7 @@ export function CreditsPage() {
         console.error("Calculation fetch error:", err);
         setCalcError(err.message || "Failed to calculate carbon credits.");
         setCalculation(null);
-      } flex: {
+      } finally {
         setCalcLoading(false);
       }
     }
@@ -113,6 +123,39 @@ export function CreditsPage() {
       alert(err.message || "Failed to mint carbon tokens on Polygon Amoy.");
     } finally {
       setMinting(false);
+    }
+  };
+
+  const openListingModal = (credit) => {
+    setListingCredit(credit);
+    setListPrice(15.0);
+    setListQty(parseFloat(credit.quantity) || 10);
+    setListingError("");
+    setListingSuccess("");
+  };
+
+  const handleCreateListing = async (e) => {
+    e.preventDefault();
+    if (!listingCredit) return;
+    setListingLoading(true);
+    setListingError("");
+    setListingSuccess("");
+
+    try {
+      await marketplaceService.createListing({
+        creditId: listingCredit.id,
+        pricePerCredit: listPrice,
+        quantity: listQty,
+      });
+
+      setListingSuccess("Carbon credits successfully listed on the Blue Carbon Marketplace!");
+      setTimeout(() => {
+        setListingCredit(null);
+      }, 1500);
+    } catch (err) {
+      setListingError(err.message || "Failed to list credits on marketplace.");
+    } finally {
+      setListingLoading(false);
     }
   };
 
@@ -312,7 +355,7 @@ export function CreditsPage() {
                 </div>
 
                 {isOverridden && (
-                  <div className="space-y-3 p-4 bg-amber-950/30 border border-amber-500/30 rounded-xl text-xs space-y-2">
+                  <div className="p-4 bg-amber-950/30 border border-amber-500/30 rounded-xl text-xs space-y-2">
                     <div className="flex items-center gap-2 text-amber-400 font-bold">
                       <AlertTriangle className="w-4 h-4 shrink-0" />
                       <span>Verifier Override Protocol Active</span>
@@ -431,7 +474,7 @@ export function CreditsPage() {
                   <th className="p-3.5">Quantity (tCO₂e)</th>
                   <th className="p-3.5">Calculation Basis</th>
                   <th className="p-3.5">Issued Date</th>
-                  <th className="p-3.5 pr-5 text-right">Blockchain Tx</th>
+                  <th className="p-3.5 pr-5 text-right">Actions / Marketplace</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -466,18 +509,26 @@ export function CreditsPage() {
                       {new Date(c.issuedAt).toLocaleDateString()}
                     </td>
                     <td className="p-3.5 pr-5 text-right">
-                      {c.blockchainTx ? (
-                        <a
-                          href={`https://amoy.polygonscan.com/tx/${c.blockchainTx}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs font-bold text-emerald-600 hover:text-emerald-800 inline-flex items-center gap-1 font-mono"
+                      <div className="flex items-center justify-end gap-2">
+                        {c.blockchainTx && (
+                          <a
+                            href={`https://amoy.polygonscan.com/tx/${c.blockchainTx}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition inline-flex items-center gap-1 font-mono text-[11px]"
+                            title="View on Polygon Amoy Explorer"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+
+                        <button
+                          onClick={() => openListingModal(c)}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition inline-flex items-center gap-1 cursor-pointer shadow-2xs"
                         >
-                          {c.blockchainTx.substring(0, 8)}... <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
+                          <Tag className="w-3.5 h-3.5" /> List for Sale
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -486,6 +537,108 @@ export function CreditsPage() {
           </div>
         )}
       </div>
+
+      {/* ── CREATE MARKETPLACE LISTING MODAL ── */}
+      {listingCredit && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-heading text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-emerald-600" /> List Carbon Credits for Sale
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Publish credits to the Blue Carbon Marketplace</p>
+              </div>
+              <button
+                onClick={() => setListingCredit(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {listingError && (
+              <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-bold">
+                {listingError}
+              </div>
+            )}
+
+            {listingSuccess ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-extrabold flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{listingSuccess}</span>
+              </div>
+            ) : (
+              <form onSubmit={handleCreateListing} className="space-y-4 text-xs">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Credit Batch</span>
+                  <strong className="text-slate-900 font-mono font-bold block">{listingCredit.tokenId || listingCredit.id}</strong>
+                  <span className="text-slate-500 text-[11px] block">{listingCredit.project?.projectName || "Blue Carbon Project"}</span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 block">Quantity to List (tCO₂e)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    max={parseFloat(listingCredit.quantity)}
+                    value={listQty}
+                    onChange={(e) => setListQty(parseFloat(e.target.value) || 1)}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-bold font-mono text-slate-900 outline-none focus:border-emerald-600"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 block">Price per Credit ($ USD / tCO₂e)</label>
+                  <input
+                    type="number"
+                    step="0.50"
+                    min="1"
+                    value={listPrice}
+                    onChange={(e) => setListPrice(parseFloat(e.target.value) || 15.0)}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-bold font-mono text-slate-900 outline-none focus:border-emerald-600"
+                    required
+                  />
+                </div>
+
+                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between font-bold">
+                  <span className="text-slate-700">Total Listing Value:</span>
+                  <span className="text-emerald-800 font-mono text-sm">${(listQty * listPrice).toFixed(2)} USD</span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setListingCredit(null)}
+                    className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={listingLoading}
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {listingLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Publishing Listing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Publish to Marketplace</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

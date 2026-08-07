@@ -5,7 +5,7 @@ import {
   LayoutDashboard, FolderKanban, Satellite, FileText,
   FileSpreadsheet, Award, Bell, Settings, LogOut,
   Menu, X, ChevronDown, Calendar, Users, Building,
-  ArrowRight, ShieldCheck, ChevronRight,
+  ArrowRight, ShieldCheck, ChevronRight, ShoppingBag
 } from "lucide-react";
 import logo from "../assets/images/logo.png";
 
@@ -24,6 +24,7 @@ const NAV = [
         ],
       },
       { name: "Satellite Verification", path: "/verifier/satellite", icon: Satellite },
+      { name: "Marketplace", path: "/verifier/marketplace", icon: ShoppingBag },
       { name: "Documents", path: "/verifier/documents", icon: FileText },
       { name: "Reports", path: "/verifier/reports", icon: FileSpreadsheet },
       { name: "Credits", path: "/verifier/credits", icon: Award },

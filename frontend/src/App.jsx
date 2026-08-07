@@ -16,12 +16,14 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import {
   HowItWorksPage,
-  MarketplacePage,
   PublicProjectsPage,
   AboutPage,
   ResourcesPage,
   ForgotPasswordPage,
 } from "./pages/Placeholders";
+
+// Shared & Marketplace pages
+import { MarketplacePage } from "./pages/dashboard/MarketplacePage";
 
 // NGO Dashboard pages
 import { Dashboard } from "./pages/Dashboard";
@@ -72,7 +74,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* ══════════ NGO DASHBOARD ══════════ */}
+        {/* ══════════ NGO & CORPORATE DASHBOARD ══════════ */}
         <Route
           path="/dashboard"
           element={
@@ -85,6 +87,7 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:id" element={<ProjectDetailPage />} />
+          <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="monitoring" element={<MonitoringPage />} />
           <Route path="credits" element={<CreditsPage />} />
           <Route path="reports" element={<MonitoringPage />} />
@@ -110,6 +113,7 @@ export default function App() {
           <Route path="projects/:id" element={<ProjectReviewPage />} />
           
           {/* Sub-pages */}
+          <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="satellite" element={<MonitoringPage />} />
           <Route path="profile" element={<VerifierProfilePage />} />
           <Route path="reports" element={<MonitoringPage />} />
@@ -137,6 +141,7 @@ export default function App() {
           <Route path="ngos" element={<AdminNGOsPage />} />
           <Route path="verifiers" element={<AdminVerifiersPage />} />
           <Route path="projects" element={<AdminProjectsPage />} />
+          <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="credits" element={<CreditsPage />} />
           <Route path="reports" element={<MonitoringPage />} />
           <Route path="analytics" element={<AdminAnalyticsPage />} />

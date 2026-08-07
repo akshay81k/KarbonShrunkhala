@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, UserCheck, FolderKanban,
   Award, FileSpreadsheet, BarChart3, Bell, Settings,
-  LogOut, Menu, X, ChevronDown, ShieldAlert
+  LogOut, Menu, X, ChevronDown, ShieldAlert, ShoppingBag
 } from "lucide-react";
 import logo from "../assets/images/logo.png";
 
@@ -22,6 +22,7 @@ const NAV = [
   {
     label: "Platform",
     items: [
+      { name: "Marketplace", path: "/admin/marketplace", icon: ShoppingBag },
       { name: "Reports", path: "/admin/reports", icon: FileSpreadsheet },
       { name: "Analytics", path: "/admin/analytics", icon: BarChart3 },
     ],
